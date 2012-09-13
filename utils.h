@@ -17,7 +17,7 @@
 
 #include "ibejiAlignment.h"
 
-namespace ibeji {
+namespace yoruba {
 
 void 
 PrintAlignment(const BamTools::BamAlignment&);
@@ -29,7 +29,7 @@ void
 printAlignmentInfo_fields(const BamTools::BamAlignment& alignment, const BamTools::RefVector& refs, int32_t level = 0);
 
 
-}  // namespace ibeji
+}  // namespace yoruba
 
 
 #endif /* UTILS_H_ */

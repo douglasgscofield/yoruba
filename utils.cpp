@@ -11,9 +11,9 @@
 
 using namespace std;
 using namespace BamTools;
-using namespace ibeji;
+using namespace yoruba;
 
-namespace ibeji {
+namespace yoruba {
 
 void 
 printAlignmentInfo(const BamAlignment& al, const RefVector& refs, int32_t level) {
@@ -43,7 +43,10 @@ printAlignmentInfo(const BamAlignment& al, const RefVector& refs, int32_t level)
             << "\tm_1=" << al.IsFirstMate() 
             << "\tm_2=" << al.IsSecondMate() 
             << "\tisz=" << setw(7) << al.InsertSize;
-    cout << endl;
+    // tags
+    string tag;
+    if (al.GetTag("RG", tag))
+        cout << "\tRG:Z:'" << tag << "'" << endl;
 }
 
 void
@@ -77,7 +80,11 @@ printAlignmentInfo_fields(const BamAlignment& al, const RefVector& refs, int32_t
             << " mat1st " << al.IsFirstMate() 
             << " mat2nd " << al.IsSecondMate() 
             << " isize " << setw(7) << al.InsertSize;
-    cout << endl;
+    // tags
+    cout << " | tags";
+    string tag;
+    if (al.GetTag("RG", tag))
+        cout << " RG:Z:'" << tag << "'" << endl;
 }
 
 
@@ -91,4 +98,5 @@ PrintAlignment(const BamAlignment& alignment) {
 }
 
 
-}  // namespace ibeji
+}  // namespace yoruba
+

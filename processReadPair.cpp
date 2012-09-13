@@ -10,9 +10,9 @@ using namespace std;
 using namespace BamTools;
 #include "processReadPair.h"
 #include "ibejiAlignment.h"
-using namespace ibeji;
+using namespace yoruba;
 
-namespace ibeji {
+namespace yoruba {
 
 const bool debug_processReadPair = true;
 const bool debug_checkLinkPairCandidate = false;
@@ -152,6 +152,6 @@ lookForMate(BamReader& rdr, BamAlignment& al, RefVector& refs)
 }
 
 
-}  // namespace ibeji;
+}  // namespace yoruba;
 
 

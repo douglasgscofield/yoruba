@@ -139,7 +139,7 @@ using namespace BamTools;
 #include "ibejiAlignment.h"
 #include "processReadPair.h"
 #include "utils.h"
-using namespace ibeji;
+using namespace yoruba;
 
 string  output_bam_filename = "test.bam";
 int32_t pairs_to_process = 20;

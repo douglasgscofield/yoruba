@@ -19,7 +19,7 @@
 #include <functional>
 #include "api/BamAlignment.h"
 
-namespace ibeji {
+namespace yoruba {
 
 // first, a map using the BamAlignment class.
 
@@ -76,7 +76,7 @@ typedef alignmentMapLite::iterator alignmentMapLiteI;
 typedef std::map<std::string, BamTools::BamAlignment> alignmentMap;
 typedef alignmentMap::iterator alignmentMapI;
 
-};  // namespace ibeji
+};  // namespace yoruba
 
 #endif /* IBEJIALIGNMENT_H_ */
 

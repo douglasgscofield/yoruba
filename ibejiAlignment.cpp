@@ -9,9 +9,9 @@
 #include "ibejiAlignment.h"
 using namespace std;
 using namespace BamTools;
-using namespace ibeji;
+using namespace yoruba;
 
-namespace ibeji {
+namespace yoruba {
 
 
 ibejiAlignment::ibejiAlignment(void)
@@ -68,6 +68,6 @@ ibejiAlignment::~ibejiAlignment(void)
 { }
 
 
-}; // namespace ibeji
+}; // namespace yoruba
 
 
