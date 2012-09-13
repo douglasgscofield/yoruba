@@ -1,0 +1,282 @@
+// ibeji.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+//
+// Ibeji finds mapped reads in BAM files that are twinned in particular ways.
+//
+// Uses BamTools C++ API for reading BAM files
+
+
+
+// First, some definitions
+
+// tail
+//
+// The distance between the start of a mapped read and the appropriate end of
+// the reference sequence.  For a forward-oriented read, this is the distance
+// between the leftmost mapped position and the 3' end of the reference, and
+// has positive sign.  For a reverse-oriented read, this is the distance
+// between the rightmost mapped position and the 5' end of the reference, and
+// has negative sign.  The absolute value of the tail is the total number of
+// bases.
+
+// total tail
+//
+// The sum of the absolute values of the tails for two link pair candidate
+// reads.
+
+// link pair candidate
+//
+// A single read mapped such that it is mapped near the end of the contig and
+// is oriented so that its mate may lie off the contig, taking paired-end
+// library insert size into account.
+
+//            rd1>
+//    |===========>    or     |==========>   or etc.
+//                              <rd2
+
+// link pair
+//
+// A pair of reads in which each read is a link pair candidate and each is mapped
+// to a different contig.
+
+//            rd1>
+//    |===========>  and  |==========>   or other such compatible configurations
+//                          <rd2
+
+// link pair orphan
+//
+// A pair of reads in which one read is a link pair candidate and the other is
+// unmapped
+
+//            rd1>                   with rd1 unmapped
+//    |===========>          or      |==========>        or etc.
+//    with rd2 unmapped                <rd2
+
+// broken link pair
+//
+// A pair of reads in which one read is a link pair candidate and the other is
+// mapped but is not a link pair candidate
+
+//            rd1>                   rd1> 
+//    |===========>   or      |==========>    |==========>  or etc.
+//      rd2>                                          <rd2
+
+//
+//
+// One read is mapped near the end of a contig, its mate is not mapped to the
+// contig oriented in such a way that its mate is likely to be off the contig: 
+//
+// Find reads in BAM files that are mapped near the end of a contig and
+// oriented so they point off the contig
+
+// Std C/C++ includes
+#include <cstdlib>
+#include <iostream>
+#include <iomanip>
+#include <string>
+using namespace std;
+
+// BamTools includes
+#include "api/BamMultiReader.h"
+#include "api/BamWriter.h"
+using namespace BamTools;
+
+void PrintAlignment(const BamAlignment&);
+
+int32_t checkLinkPair(const BamAlignment& al1, const BamAlignment& al2, const RefVector& refs, int32_t critTail, bool diff_ref = true);
+int32_t checkLinkPairCandidate(const BamAlignment&, const RefVector&, int32_t critTail);
+int32_t readTail(const BamAlignment& al, const RefVector& refs);
+void    printAlignmentInfo(const BamAlignment& alignment);
+
+const int32_t link_pair_crit_tail = 200;
+
+const bool debug_checkLinkPairCandidate = false;
+const bool debug_checkLinkPair = true;
+const bool debug_readTail = false;
+
+#define SIGN(__x__) ((__x__ > 0) - (__x__ < 0))
+
+int 
+main(int argc, char* argv[]) {
+
+	// validate argument count
+	if( argc != 2 ) {
+		cerr << "USAGE: " << argv[0] << " <input BAM file> " << endl;
+		exit(1);
+	}
+
+	string filename = argv[1];
+	cout << "Printing alignments from file: " << filename << endl;
+	
+	BamReader reader;
+	if (!reader.Open(filename)) {
+        cerr << "could not open filename " << filename << ", exiting" << endl;
+        return 1;
+    }
+
+    // Not possible since we are now using name-sorted BAM
+	//if (!reader.LocateIndex()) {
+    //    const string index_filename = filename + ".bai";
+    //    cout << "could not locate index, trying to open " << index_filename << endl;
+	//    if (!reader.OpenIndex(index_filename)) {
+    //        cerr << "could not open index " << index_filename << ", exiting" << endl;
+    //        return 1;
+    //    }
+    //}
+
+
+    RefVector refs = reader.GetReferenceData();
+	
+	BamAlignment al, al_mate;
+    int count = 0;
+    int n_reads = 0;
+    int n_singleton_reads = 0;
+	while (reader.GetNextAlignment(al) && reader.GetNextAlignment(al_mate) && count < 8) {
+        n_reads += 2;
+        while (al.Name != al_mate.Name) {
+            ++n_singleton_reads;  // shouldn't this match samtools flagstat singleton count?
+            al = al_mate;
+	        reader.GetNextAlignment(al_mate);
+            ++n_reads;
+        }
+        if (al.Name != al_mate.Name) {
+            cout << "Name mismatch, al.Name = " << al.Name << "  al_mate.Name = " << al_mate.Name << endl;
+            break;
+        }
+
+        int32_t total_tail = -1;
+        if (! (total_tail = checkLinkPair(al, al_mate, refs, link_pair_crit_tail, false))) {
+            // continue;
+        }
+        if (! checkLinkPairCandidate(al, refs, link_pair_crit_tail)
+            & ! checkLinkPairCandidate(al_mate, refs, link_pair_crit_tail)) {
+            continue;
+        }
+
+        ++count;
+	    cout << "---------------------------------" << endl;
+        printAlignmentInfo(al);
+        int32_t lpc_tail;
+        if ((lpc_tail = checkLinkPairCandidate(al, refs, link_pair_crit_tail))) {
+	        cout << "LINK PAIR CANDIDATE ";
+	        cout << ((lpc_tail > 0) ? "--->" : "<---") << " " << lpc_tail << endl;
+        }
+        printAlignmentInfo(al_mate);
+        if ((lpc_tail = checkLinkPairCandidate(al_mate, refs, link_pair_crit_tail))) {
+	        cout << "LINK PAIR CANDIDATE ";
+	        cout << ((lpc_tail > 0) ? "--->" : "<---") << " " << lpc_tail << endl;
+        }
+	    cout << "TOTAL TAIL " << (abs(readTail(al, refs)) + abs(readTail(al_mate, refs))) << endl;
+	}
+
+	cout << "===============================" << endl;
+    cout << n_reads << " total reads" << endl;
+    cout << n_singleton_reads << " singleton reads" << endl;
+    // cout << "al.Name = " << al.Name << "  al_mate.Name = " << al_mate.Name << endl;
+
+	reader.Close();
+	return 0;
+}
+
+int32_t 
+readTail(const BamAlignment& al, const RefVector& refs)
+{
+    if (! al.IsMapped()) return 0;
+    int32_t tail = 0;
+    if (al.IsReverseStrand()) {
+        tail = -(al.Position + al.AlignedBases.length());
+        if (debug_readTail) cout << "readTail: - tail = " << tail << endl;
+    } else {
+        tail = refs[al.RefID].RefLength - al.Position + 1;
+        if (debug_readTail) cout << "readTail: + tail = " << tail << endl;
+    }
+    return tail;
+}
+
+int32_t 
+checkLinkPair(const BamAlignment& al1, const BamAlignment& al2, const RefVector& refs, int32_t critTail, bool diff_ref)
+{
+    if (al1.RefID == al2.RefID && diff_ref) return 0;
+    int32_t tail1 = checkLinkPairCandidate(al1, refs, critTail);
+    if (! tail1) return 0;
+    int32_t tail2 = checkLinkPairCandidate(al2, refs, critTail);
+    if (! tail2) return 0;
+    return (abs(tail1) + abs(tail2));
+}
+
+int32_t 
+checkLinkPairCandidate(const BamAlignment& al, const RefVector& refs, int32_t critTail)
+{
+    int32_t tail = readTail(al, refs);
+    return abs(tail) <= critTail ? tail : 0;
+}
+
+void 
+printAlignmentInfo(const BamAlignment& al) {
+    cout << setw(40) << left << al.Name << right
+        << " prim " << al.IsPrimaryAlignment() 
+        << " |"
+        << " refid " << al.RefID
+        << " pos " << setw(8) << al.Position
+        << " map " << al.IsMapped() 
+        << " rev " << al.IsReverseStrand() 
+        << " |"
+        << " mate refid " << al.MateRefID
+        << " pos " << setw(8) << al.MatePosition
+        << " map " << al.IsMateMapped() 
+        << " rev " << al.IsMateReverseStrand() 
+        << " |"
+        << " qln " << setw(3) << al.QueryBases.length()
+        << " aln " << setw(3) << al.AlignedBases.length()
+        << " mapq " << al.MapQuality
+        << " pair " << al.IsPaired() 
+        << " proppair " << al.IsProperPair() 
+        << " |"
+        << " mat1st " << al.IsFirstMate() 
+        << " mat2nd " << al.IsSecondMate() 
+        << " isize " << setw(7) << al.InsertSize
+        << endl;
+}
+
+//////////////////////////////
+// code stowed away
+//////////////////////////////
+
+// Spit out basic BamAlignment data 
+void 
+PrintAlignment(const BamAlignment& alignment) {
+	cout << "---------------------------------" << endl;
+	cout << "Name: "       << alignment.Name << endl;
+	cout << "Aligned to: " << alignment.RefID;
+	cout << ":"            << alignment.Position << endl;
+}
+
+// old mate-finding code, for position-sorted BAM files, didn't work well
+BamAlignment 
+lookForMate(BamReader& rdr, BamAlignment& al)
+{
+    if (! rdr.Jump(al.MateRefID, al.MatePosition)) {
+        cout << "*** Could not jump to " << al.MateRefID << ":" << al.MatePosition << endl;
+        exit(1);
+    }
+    BamAlignment al_jump;
+    while (rdr.GetNextAlignment(al_jump)) {
+        if (al_jump.Name == al.Name 
+            && al_jump.RefID == al.MateRefID
+            && al_jump.Position == al.MatePosition) {
+         cout << "MATE FOUND" << endl;
+            printAlignmentInfo(al_jump);
+            break;
+        } else if (al_jump.Position > al.MatePosition) {
+         cout << "NO MATE FOUND, beyond MatePosition" << endl;
+            break;
+        }
+    }
+    if (! rdr.Jump(al.RefID, al.Position)) {
+        cout << "*** Could not return to " << al.RefID << ":" << al.Position << endl;
+        exit(1);
+    }
+    // need to return to the read we were on after the jump, but how?
+    rdr.GetNextAlignment(al);
+    return(al_jump);
+}
+
