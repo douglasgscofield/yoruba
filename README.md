@@ -4,8 +4,9 @@ yoruba
 Yoruba is a toolset to query and manipulate BAM files.  Yoruba is under active
 development.
 
-Yoruba uses the BamTools C++ API for handling BAM files.  When completed yoruba
-will include the pieces of BamTools required to function.
+Yoruba uses the BamTools C++ API for handling BAM files
+(<https://github.com/pezmaster31/bamtools>), and SimpleOpt for handling
+command-line options (<http://code.jellycan.com/simpleopt>).
 
 ~~~~~~
 

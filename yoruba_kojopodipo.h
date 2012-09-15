@@ -19,7 +19,7 @@
 #include <string>
 #include <list>
 
-// BamTools includes
+// BamTools includes: https://github.com/pezmaster31/bamtools
 #include "api/BamReader.h"
 #include "api/BamWriter.h"
 #include "api/BamAlignment.h"
