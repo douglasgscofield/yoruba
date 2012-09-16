@@ -43,7 +43,7 @@ other read groups, these definitions will remain in the BAM file header, but
 all reads in the BAM file will still be given the new read group.
 
 This behaviour can be changed by using the options `--no-replace`, `--only-replace` 
-and `--clear-read-group`.  See table below.
+and `--clear`.  See table below.
 
 The only argument required to specify a valid read group is `--ID` or its
 synonym `--id`.
@@ -65,7 +65,7 @@ synonym `--id`.
 | `--o FILE` or `-o FILE` or `--output FILE` | output file name [default is stdout] |
 | `--no-replace`                             | abort if the read group exists |
 | `--only-replace`                           | replace just this read group |
-| `--clear-read-group`                       | clear all read group information |
+| `--clear`                                  | clear all read group information |
 | `--?` or `-?` or `--help`                  | longer help |
 | `--debug INT`                              | debug info level `INT` |
 | `--reads INT`                              | process at most this many reads |
@@ -89,7 +89,7 @@ The `--only-replace` option modifies information for only those reads in the
 supplied read group (same ID). Read group information for other reads,
 including those without any other read group information, is unchanged.
 
-The `--clear-read-group` option removes all read group information from all reads.
+The `--clear` option removes all read group information from all reads.
 If specified with options defining a read group, then the read group dictionary
 will be cleared prior to defining the new read group.
 
@@ -102,14 +102,15 @@ Option            |    no RG      | RG matches `--ID` | RG does not match `--ID`
 only `--ID` etc.  | new RG set for all reads                                   ||| RG added      |
 `--no-replace`    | new RG set    | abort             | no change                | RG added; abort if present |
 `--only-replace`  | no change     | no change         | no change                | RG updated from options |
-`--clear-read-group`, no `--ID`   | no change | RG removed | RG removed          | cleared       |
-`--clear-read-group`, with `--ID` | new RG set for all reads                   ||| cleared, then RG added |
+`--clear`, no `--ID`  | no change | RG removed        | RG removed               | cleared       |
+`--clear`, with `--ID` | new RG set for all reads                              ||| cleared, then RG added |
 [Option effects on read groups]
 
 
 ### Informal performance comparison
 
-| BAM file              | `yoruba readgroup` | picard `AddOrReplaceReadGroups` |
-|-----------------------|--------------------|---------------------------------|
-| 208G with 2.41B reads | ~23:00:00, 4GB RAM | 31:23:43, >9GB RAM |
+| BAM file                           | `yoruba readgroup` | picard `AddOrReplaceReadGroups` |
+|------------------------------------|--------------------|---------------------------------|
+| 208G with 2.41B reads and 10.4M references | ~23:00:00, 4GB RAM | 31:23:43, >9GB RAM |
+
 

@@ -32,7 +32,7 @@ static string       input_file;  // defaults to stdin, set from command line
 static string       output_file;  // defaults to stdout, set with -o FILE
 static bool         opt_noreplace = false;
 static bool         opt_onlyreplace = false;
-static bool         opt_clearreadgroup = false;
+static bool         opt_clear = false;
 // leave debug options in
 #ifdef _WITH_DEBUG
 #endif
@@ -84,7 +84,7 @@ other read groups, their definitions will remain in the BAM file header but\n\
 all reads will be given the supplied read group.\n\
 \n\
 Other behaviour can be specified using --no-replace, --only-replace and \n\
---clear-read-group.  See table below.\n\
+--clear.  See table below.\n\
 \n\
 The only argument required to specify a valid read group is --ID or --id.\n\
 \n";
@@ -104,7 +104,7 @@ The only argument required to specify a valid read group is --ID or --id.\n\
     cerr << "         --o FILE | -o FILE | --output FILE  output file name [default is stdout]" << endl;
     cerr << "         --no-replace                        abort if the read group exists" << endl;
     cerr << "         --only-replace                      replace just this read group" << endl;
-    cerr << "         --clear-read-group                  clear all read group information" << endl;
+    cerr << "         --clear                             clear all read group information" << endl;
     cerr << "         --? | -? | --help                   longer help" << endl;
     cerr << endl;
 #ifdef _WITH_DEBUG
@@ -129,31 +129,31 @@ The --only-replace option modifies information for only those reads in the\n\
 supplied read group (same ID). Read group information for other reads,\n\
 including those without any other read group information, is unchanged.\n\
 \n\
-The --clear-read-group option removes all read group information from all reads.\n\
-If specified with options defining a read group, then the read group dictionary\n\
+The --clear option removes all read group information from all reads.  If\n\
+specified with options defining a read group, then the read group dictionary\n\
 will be cleared prior to defining the new read group.\n\
 \n\
 Only one of these may be supplied at a time.  To summarizing the effects of these options:\n\
 \n\
-                          Read read group (RG) tag status                          \n\
-                    ---------------------------------------------                  \n\
-                        no RG    |    RG matches   |  RG does not                  \n\
-Option                           |       --ID      |  match --ID    RG dictionary  \n\
-------------------  ---------------------------------------------  ----------------\n\
-                                                                                   \n\
-only --ID etc.                 new RG set for all reads             RG added       \n\
-                                                                                   \n\
---no-replace         new RG set         abort         no change     RG added; abort\n\
-                     from --ID                                      if present     \n\
-                                                                                   \n\
---only-replace       no change        no change       no change     RG updated     \n\
-                                                                    from options   \n\
-                                                                                   \n\
---clear-read-group   no change        RG removed      RG removed    cleared        \n\
-  no --ID                                                                          \n\
-                                                                                   \n\
---clear-read-group             new RG set for all reads             cleared, then  \n\
-  with --ID                                                         RG added       \n\
+                      Read read group (RG) tag status                          \n\
+                ---------------------------------------------                  \n\
+                    no RG    |    RG matches   |  RG does not                  \n\
+Option                       |       --ID      |  match --ID    RG dictionary  \n\
+--------------  ---------------------------------------------  ----------------\n\
+                                                                               \n\
+only --ID etc.             new RG set for all reads             RG added       \n\
+                                                                               \n\
+--no-replace     new RG set         abort         no change     RG added; abort\n\
+                 from --ID                                      if present     \n\
+                                                                               \n\
+--only-replace   no change        no change       no change     RG updated     \n\
+                                                                from options   \n\
+                                                                               \n\
+--clear          no change        RG removed      RG removed    cleared        \n\
+  no --ID                                                                      \n\
+                                                                               \n\
+--clear                    new RG set for all reads             cleared, then  \n\
+  with --ID                                                     RG added       \n\
 \n\
 \n";
     cerr << "Kojopodipo is the Yoruba (Nigeria) word for 'group'." << endl;
@@ -177,7 +177,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 	}
 
     enum { OPT_ID, OPT_LB, OPT_SM, OPT_DS, OPT_DT, OPT_PG, OPT_PL, OPT_PU, OPT_PI, OPT_FO,
-        OPT_KS, OPT_CN, OPT_output, OPT_noreplace, OPT_onlyreplace, OPT_clearreadgroup,
+        OPT_KS, OPT_CN, OPT_output, OPT_noreplace, OPT_onlyreplace, OPT_clear,
 #ifdef _WITH_DEBUG
         OPT_debug, OPT_reads, OPT_progress,
 #endif
@@ -201,7 +201,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         { OPT_output, "--output", SO_REQ_SEP },
         { OPT_noreplace, "--no-replace", SO_NONE },
         { OPT_onlyreplace, "--only-replace", SO_NONE },
-        { OPT_clearreadgroup, "--clear-read-group", SO_NONE },
+        { OPT_clear, "--clear", SO_NONE },
         { OPT_help, "--?", SO_NONE }, 
         { OPT_help, "-?", SO_NONE }, 
         { OPT_help, "--help", SO_NONE },
@@ -245,7 +245,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         else if (args.OptionId() == OPT_output) output_file = args.OptionArg();
         else if (args.OptionId() == OPT_noreplace) opt_noreplace = true;
         else if (args.OptionId() == OPT_onlyreplace) opt_onlyreplace = true;
-        else if (args.OptionId() == OPT_clearreadgroup) opt_clearreadgroup = true;
+        else if (args.OptionId() == OPT_clear) opt_clear = true;
 // leave debug options in 
 #ifdef _WITH_DEBUG
 #endif
@@ -283,12 +283,12 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     }
 
     // check option semantics
-    if (! opt_clearreadgroup && new_readgroup.ID.empty()) {
+    if (! opt_clear && new_readgroup.ID.empty()) {
         cerr << NAME << " must define a read group using --ID or --id" << endl;
         return usage();
     }
-    if (opt_noreplace + opt_onlyreplace + opt_clearreadgroup > 1) {
-        cerr << NAME << " use only one of --no-replace, --only-replace or --clear-read-group" << endl;
+    if (opt_noreplace + opt_onlyreplace + opt_clear > 1) {
+        cerr << NAME << " use only one of --no-replace, --only-replace or --clear" << endl;
         return usage(true);
     }
 
@@ -297,7 +297,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
             cerr << NAME << " modifying up to " << opt_reads << " reads" << endl; 
         cerr << NAME << " opt_noreplace = " << opt_noreplace << endl;
         cerr << NAME << " opt_onlyreplace = " << opt_onlyreplace << endl;
-        cerr << NAME << " opt_clearreadgroup = " << opt_clearreadgroup << endl;
+        cerr << NAME << " opt_clear = " << opt_clear << endl;
         cerr << NAME << " new_readgroup.ID = " << new_readgroup.ID << endl;
         cerr << NAME << " new_readgroup.Library = " << new_readgroup.Library << endl;
         cerr << NAME << " new_readgroup.Sample = " << new_readgroup.Sample << endl;
@@ -313,6 +313,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     }
 
 	BamReader reader;
+
 	if (! reader.Open(input_file)) {
         cerr << NAME << "could not open BAM input" << endl;
         return 1;
@@ -326,7 +327,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
         _DEBUG(0) printReadGroupDictionary(cerr, header.ReadGroups);
 
-        if (opt_clearreadgroup)
+        if (opt_clear)
             header.ReadGroups.Clear();
 
     }
