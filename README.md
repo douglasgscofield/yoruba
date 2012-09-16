@@ -70,14 +70,13 @@ synonym `--id`.
 | `--debug INT`                              | debug info level `INT` |
 | `--reads INT`                              | process at most this many reads |
 | `--progress INT`                           | print reads processed mod `INT` |
-[`readgroup` Options]
 
 In the options table, `STR` indicates a string argument, `INT` indicates an
 integer value, and `FILE` indicates a filename.
 
 No formatting restrictions are imposed on any of the read group strings. It is
 the user's responsibility to ensure that they conform to the SAM definitions
-<http://samtools.sourceforge.net/SAM1.pdf> or to any other tool requirements.
+(<http://samtools.sourceforge.net/SAM1.pdf>) or to any other tool requirements.
 
 If the output file is not specified, then output is written to stdout.
 
@@ -96,15 +95,64 @@ will be cleared prior to defining the new read group.
 Only one of these options may be supplied at a time.  To summarize the effects
 of these options on the read group dictionary and the RG tag on reads:
 
-|                 | Read group (RG) tag on reads                               |||               |
-Option            |    no RG      | RG matches `--ID` | RG does not match `--ID` | RG dictionary |
-------------------|---------------|-------------------|--------------------------|---------------|
-only `--ID` etc.  | new RG set for all reads                                   ||| RG added      |
-`--no-replace`    | new RG set    | abort             | no change                | RG added; abort if present |
-`--only-replace`  | no change     | no change         | no change                | RG updated from options |
-`--clear`, no `--ID`  | no change | RG removed        | RG removed               | cleared       |
-`--clear`, with `--ID` | new RG set for all reads                              ||| cleared, then RG added |
-[Option effects on read groups]
+<table>
+<thead>
+<tr>
+  <th> </th>
+  <th align="center" colspan="3">ReadGroup (RG) tag on reads</th>
+  <th> </th>
+</tr>
+<tr>
+  <th>Option</th>
+  <th>no RG</th>
+  <th>RG matches <code>--ID</code></th>
+  <th>RG does not match <code>--ID</code></th>
+  <th>RG dictionary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>only <code>--ID</code> etc.</td>
+  <td align="center" colspan="3">new RG set for all reads</td>
+  <td>RG added</td>
+</tr>
+<tr>
+  <td><code>--no-replace</code></td>
+  <td>new RG set</td>
+  <td>abort</td>
+  <td>no change</td>
+  <td>RG added; abort if present</td>
+</tr>
+<tr>
+  <td><code>--only-replace</code></td>
+  <td>no change</td>
+  <td>no change</td>
+  <td>no change</td>
+  <td>RG updated from options</td>
+</tr>
+<tr>
+  <td><code>--clear</code>, no <code>--ID</code></td>
+  <td>no change</td>
+  <td>RG removed</td>
+  <td>RG removed</td>
+  <td>cleared</td>
+</tr>
+<tr>
+  <td><code>--clear</code>, with <code>--ID</code></td>
+  <td align="center" colspan="3">new RG set for all reads</td>
+  <td>cleared, then RG added</td>
+</tr>
+</tbody>
+</table>
+
+|                  | Read group (RG) tag on reads                               |||               |
+|Option            |    no RG      | RG matches `--ID` | RG does not match `--ID` | RG dictionary |
+|------------------|---------------|-------------------|--------------------------|---------------|
+|only `--ID` etc.  | new RG set for all reads                                   ||| RG added      |
+|`--no-replace`    | new RG set    | abort             | no change                | RG added; abort if present |
+|`--only-replace`  | no change     | no change         | no change                | RG updated from options |
+|`--clear`, no `--ID`  | no change | RG removed        | RG removed               | cleared       |
+|`--clear`, with `--ID` | new RG set for all reads                              ||| cleared, then RG added |
 
 
 ### Informal performance comparison
