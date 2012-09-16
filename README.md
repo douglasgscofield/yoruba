@@ -10,6 +10,10 @@ and some other tools:
 where `<command>` is one of several specific commands.  Thus far, only `readgroup`
 is completely implemented.
 
+| `yoruba` command   | Action |
+|--------------------|--------|
+| `yoruba readgroup` | Add or replace read group information in a BAM file |
+
 Yoruba uses the BamTools C++ API for handling BAM files
 (<https://github.com/pezmaster31/bamtools>), and SimpleOpt for handling
 command-line options (<http://code.jellycan.com/simpleopt>).
@@ -104,9 +108,9 @@ of these options on the read group dictionary and the RG tag on reads:
 </tr>
 <tr>
   <th bgcolor="#e4e4e4"></th>
-  <th bgcolor="#f0f0f0">no RG</th>
-  <th bgcolor="#f0f0f0">RG matches <code>--ID</code></th>
-  <th bgcolor="#f0f0f0">RG does not match <code>--ID</code></th>
+  <th bgcolor="#eaeaea">no RG</th>
+  <th bgcolor="#eaeaea">RG matches <code>--ID</code></th>
+  <th bgcolor="#eaeaea">RG does not match <code>--ID</code></th>
   <th bgcolor="#e4e4e4"></th>
 </tr>
 </thead>
