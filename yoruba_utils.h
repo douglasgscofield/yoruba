@@ -22,16 +22,16 @@ void
 PrintAlignment(const BamTools::BamAlignment&);
 
 void
-printAlignmentInfo(const BamTools::BamAlignment& alignment, int32_t level = 0);
+printAlignmentInfo(std::ostream& os, const BamTools::BamAlignment& alignment, int32_t level = 0);
 
 void
-printAlignmentInfo(const BamTools::BamAlignment& alignment, const BamTools::RefVector& refs, int32_t level = 0);
+printAlignmentInfo(std::ostream& os, const BamTools::BamAlignment& alignment, const BamTools::RefVector& refs, int32_t level = 0);
 
 void
-printAlignmentInfo_fields(const BamTools::BamAlignment& alignment, int32_t level = 0);
+printAlignmentInfo_fields(std::ostream& os, const BamTools::BamAlignment& alignment, int32_t level = 0);
 
 void
-printAlignmentInfo_fields(const BamTools::BamAlignment& alignment, const BamTools::RefVector& refs, int32_t level = 0);
+printAlignmentInfo_fields(std::ostream& os, const BamTools::BamAlignment& alignment, const BamTools::RefVector& refs, int32_t level = 0);
 
 
 }  // namespace yoruba

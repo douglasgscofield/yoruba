@@ -8,27 +8,27 @@ using namespace yoruba;
 namespace yoruba {
 
 void 
-printAlignmentInfo(const BamAlignment& al, int32_t level) {
-    cout << al.Name;
+printAlignmentInfo(std::ostream& os, const BamAlignment& al, int32_t level) {
+    os << al.Name;
     if (level > 1)
-        cout << "\tprim=" << al.IsPrimaryAlignment();
-    cout << "\trefid=" << al.RefID
+        os << "\tprim=" << al.IsPrimaryAlignment();
+    os << "\trefid=" << al.RefID
         << "\tpos=" << al.Position;
     if (level > 0) 
-        cout << "\tmap=" << al.IsMapped();
-    cout << "\trev=" << al.IsReverseStrand();
+        os << "\tmap=" << al.IsMapped();
+    os << "\trev=" << al.IsReverseStrand();
     if (level > 1) 
-        cout << " |"
+        os << " |"
             << "\tm_refid=" << al.MateRefID
             << "\tm_pos=" << al.MatePosition
             << "\tm_map=" << al.IsMateMapped() 
             << "\tm_rev=" << al.IsMateReverseStrand();
     if (level > 0) 
-        cout << "\tq_len=" << al.QueryBases.length()
+        os << "\tq_len=" << al.QueryBases.length()
             << "\ta_len=" << al.AlignedBases.length();
-    cout << "\tmapq=" << al.MapQuality;
+    os << "\tmapq=" << al.MapQuality;
     if (level > 2)
-        cout << "\tpair=" << al.IsPaired() 
+        os << "\tpair=" << al.IsPaired() 
             << "\tprop=" << al.IsProperPair() 
             << "\tm_1=" << al.IsFirstMate() 
             << "\tm_2=" << al.IsSecondMate() 
@@ -36,33 +36,33 @@ printAlignmentInfo(const BamAlignment& al, int32_t level) {
     // tags
     string tag;
     if (al.GetTag("RG", tag))
-        cout << "\tRG:Z:'" << tag << "'" << endl;
+        os << "\tRG:Z:'" << tag << "'" << endl;
 }
 
 void 
-printAlignmentInfo(const BamAlignment& al, const RefVector& refs, int32_t level) {
-    cout << al.Name;
+printAlignmentInfo(std::ostream& os, const BamAlignment& al, const RefVector& refs, int32_t level) {
+    os << al.Name;
     if (level > 1)
-        cout << "\tprim=" << al.IsPrimaryAlignment();
-    cout << "\trefid=" << al.RefID
+        os << "\tprim=" << al.IsPrimaryAlignment();
+    os << "\trefid=" << al.RefID
         << "\tref=" << refs[al.RefID].RefName
         << "\tlen=" << refs[al.RefID].RefLength 
         << "\tpos=" << al.Position;
     if (level > 0) 
-        cout << "\tmap=" << al.IsMapped();
-    cout << "\trev=" << al.IsReverseStrand();
+        os << "\tmap=" << al.IsMapped();
+    os << "\trev=" << al.IsReverseStrand();
     if (level > 1) 
-        cout << " |"
+        os << " |"
             << "\tm_refid=" << al.MateRefID
             << "\tm_pos=" << al.MatePosition
             << "\tm_map=" << al.IsMateMapped() 
             << "\tm_rev=" << al.IsMateReverseStrand();
     if (level > 0) 
-        cout << "\tq_len=" << al.QueryBases.length()
+        os << "\tq_len=" << al.QueryBases.length()
             << "\ta_len=" << al.AlignedBases.length();
-    cout << "\tmapq=" << al.MapQuality;
+    os << "\tmapq=" << al.MapQuality;
     if (level > 2)
-        cout << "\tpair=" << al.IsPaired() 
+        os << "\tpair=" << al.IsPaired() 
             << "\tprop=" << al.IsProperPair() 
             << "\tm_1=" << al.IsFirstMate() 
             << "\tm_2=" << al.IsSecondMate() 
@@ -70,91 +70,91 @@ printAlignmentInfo(const BamAlignment& al, const RefVector& refs, int32_t level)
     // tags
     string tag;
     if (al.GetTag("RG", tag))
-        cout << "\tRG:Z:'" << tag << "'" << endl;
+        os << "\tRG:Z:'" << tag << "'" << endl;
 }
 
 void
-printAlignmentInfo_fields(const BamAlignment& al, int32_t level) {
-    cout << setw(35) << left << al.Name << right;
+printAlignmentInfo_fields(std::ostream& os, const BamAlignment& al, int32_t level) {
+    os << setw(35) << left << al.Name << right;
     if (level > 1)
-        cout << " prim " << al.IsPrimaryAlignment();
-    cout << " |"
+        os << " prim " << al.IsPrimaryAlignment();
+    os << " |"
         << " refid " << setw(8) << al.RefID
         << " pos " << setw(8) << al.Position;
     if (level > 0) 
-        cout << " map " << al.IsMapped();
-    cout << " rev " << al.IsReverseStrand();
+        os << " map " << al.IsMapped();
+    os << " rev " << al.IsReverseStrand();
     if (level > 1) 
-        cout << " |"
+        os << " |"
             << " MATE refid " << setw(8) << al.MateRefID
             << " pos " << setw(8) << al.MatePosition
             << " map " << al.IsMateMapped() 
             << " rev " << al.IsMateReverseStrand();
-    cout << " |";
+    os << " |";
     if (level > 0) 
-        cout << " q:aln " << setw(3) << al.QueryBases.length()
+        os << " q:aln " << setw(3) << al.QueryBases.length()
             << ":" << setw(3) << al.AlignedBases.length();
-    cout << " mapq " << al.MapQuality;
+    os << " mapq " << al.MapQuality;
     if (level > 2)
-        cout << " pair " << al.IsPaired() 
+        os << " pair " << al.IsPaired() 
             << " proppair " << al.IsProperPair() 
             << " |"
             << " mat1st " << al.IsFirstMate() 
             << " mat2nd " << al.IsSecondMate() 
             << " isize " << setw(7) << al.InsertSize;
     // tags
-    cout << " | tags";
+    os << " | tags";
     string tag;
     if (al.GetTag("RG", tag))
-        cout << " RG:Z:'" << tag << "'" << endl;
+        os << " RG:Z:'" << tag << "'" << endl;
 }
 
 void
-printAlignmentInfo_fields(const BamAlignment& al, const RefVector& refs, int32_t level) {
-    cout << setw(35) << left << al.Name << right;
+printAlignmentInfo_fields(std::ostream& os, const BamAlignment& al, const RefVector& refs, int32_t level) {
+    os << setw(35) << left << al.Name << right;
     if (level > 1)
-        cout << " prim " << al.IsPrimaryAlignment();
-    cout << " |"
+        os << " prim " << al.IsPrimaryAlignment();
+    os << " |"
         << " refid " << setw(8) << al.RefID
         << " <" << setw(15) << refs[al.RefID].RefName
         << ",L" << setw(5) << refs[al.RefID].RefLength << ">" 
         << " pos " << setw(8) << al.Position;
     if (level > 0) 
-        cout << " map " << al.IsMapped();
-    cout << " rev " << al.IsReverseStrand();
+        os << " map " << al.IsMapped();
+    os << " rev " << al.IsReverseStrand();
     if (level > 1) 
-        cout << " |"
+        os << " |"
             << " MATE refid " << setw(8) << al.MateRefID
             << " pos " << setw(8) << al.MatePosition
             << " map " << al.IsMateMapped() 
             << " rev " << al.IsMateReverseStrand();
-    cout << " |";
+    os << " |";
     if (level > 0) 
-        cout << " q:aln " << setw(3) << al.QueryBases.length()
+        os << " q:aln " << setw(3) << al.QueryBases.length()
             << ":" << setw(3) << al.AlignedBases.length();
-    cout << " mapq " << al.MapQuality;
+    os << " mapq " << al.MapQuality;
     if (level > 2)
-        cout << " pair " << al.IsPaired() 
+        os << " pair " << al.IsPaired() 
             << " proppair " << al.IsProperPair() 
             << " |"
             << " mat1st " << al.IsFirstMate() 
             << " mat2nd " << al.IsSecondMate() 
             << " isize " << setw(7) << al.InsertSize;
     // tags
-    cout << " | tags";
+    os << " | tags";
     string tag;
     if (al.GetTag("RG", tag))
-        cout << " RG:Z:'" << tag << "'" << endl;
+        os << " RG:Z:'" << tag << "'" << endl;
 }
 
 
 // Spit out basic BamAlignment data, from early BamReader code
 void 
-PrintAlignment(const BamAlignment& alignment) {
-	cout << "---------------------------------" << endl;
-	cout << "Name: "       << alignment.Name << endl;
-	cout << "Aligned to: " << alignment.RefID;
-	cout << ":"            << alignment.Position << endl;
+PrintAlignment(std::ostream& os, const BamAlignment& alignment) {
+	os << "---------------------------------" << endl;
+	os << "Name: "       << alignment.Name << endl;
+	os << "Aligned to: " << alignment.RefID;
+	os << ":"            << alignment.Position << endl;
 }
 
 

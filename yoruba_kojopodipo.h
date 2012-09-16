@@ -34,7 +34,7 @@
 #include "yoruba.h"
 #include "yoruba_utils.h"
 
-#define NAME "[yoruba_readgroup]:"
+#define NAME "[yoruba_readgroup]"
 
 // Functions defined in yoruba_kojopodipo.cpp
 //

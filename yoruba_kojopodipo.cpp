@@ -133,7 +133,7 @@ The --clear-read-group option removes all read group information from all reads.
 If specified with options defining a read group, then the read group dictionary\n\
 will be cleared prior to defining the new read group.\n\
 \n\
-To summarizing the effects of these options:\n\
+Only one of these may be supplied at a time.  To summarizing the effects of these options:\n\
 \n\
                           Read read group (RG) tag status                          \n\
                     ---------------------------------------------                  \n\
@@ -287,24 +287,29 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         cerr << NAME << " must define a read group using --ID or --id" << endl;
         return usage();
     }
+    if (opt_noreplace + opt_onlyreplace + opt_clearreadgroup > 1) {
+        cerr << NAME << " use only one of --no-replace, --only-replace or --clear-read-group" << endl;
+        return usage(true);
+    }
+
     _DEBUG(0) { 
         if (opt_reads >= 0) 
             cerr << NAME << " modifying up to " << opt_reads << " reads" << endl; 
-        // cerr << NAME << " opt_noreplace = " << opt_noreplace << endl;
-        // cerr << NAME << " opt_onlyreplace = " << opt_onlyreplace << endl;
-        // cerr << NAME << " opt_clearreadgroup = " << opt_clearreadgroup << endl;
-        // cerr << NAME << " new_readgroup.ID = " << new_readgroup.ID << endl;
-        // cerr << NAME << " new_readgroup.Library = " << new_readgroup.Library << endl;
-        // cerr << NAME << " new_readgroup.Sample = " << new_readgroup.Sample << endl;
-        // cerr << NAME << " new_readgroup.Description = " << new_readgroup.Description << endl;
-        // cerr << NAME << " new_readgroup.ProductionDate = " << new_readgroup.ProductionDate << endl;
-        // cerr << NAME << " new_readgroup.Program = " << new_readgroup.Program << endl;
-        // cerr << NAME << " new_readgroup.SequencingTechnology = " << new_readgroup.SequencingTechnology << endl;
-        // cerr << NAME << " new_readgroup.PlatformUnit = " << new_readgroup.PlatformUnit << endl;
-        // cerr << NAME << " new_readgroup.PredictedInsertSize = " << new_readgroup.PredictedInsertSize << endl;
-        // cerr << NAME << " new_readgroup.FlowOrder = " << new_readgroup.FlowOrder << endl;
-        // cerr << NAME << " new_readgroup.KeySequence = " << new_readgroup.KeySequence << endl;
-        // cerr << NAME << " new_readgroup.SequencingCenter = " << new_readgroup.SequencingCenter << endl;
+        cerr << NAME << " opt_noreplace = " << opt_noreplace << endl;
+        cerr << NAME << " opt_onlyreplace = " << opt_onlyreplace << endl;
+        cerr << NAME << " opt_clearreadgroup = " << opt_clearreadgroup << endl;
+        cerr << NAME << " new_readgroup.ID = " << new_readgroup.ID << endl;
+        cerr << NAME << " new_readgroup.Library = " << new_readgroup.Library << endl;
+        cerr << NAME << " new_readgroup.Sample = " << new_readgroup.Sample << endl;
+        cerr << NAME << " new_readgroup.Description = " << new_readgroup.Description << endl;
+        cerr << NAME << " new_readgroup.ProductionDate = " << new_readgroup.ProductionDate << endl;
+        cerr << NAME << " new_readgroup.Program = " << new_readgroup.Program << endl;
+        cerr << NAME << " new_readgroup.SequencingTechnology = " << new_readgroup.SequencingTechnology << endl;
+        cerr << NAME << " new_readgroup.PlatformUnit = " << new_readgroup.PlatformUnit << endl;
+        cerr << NAME << " new_readgroup.PredictedInsertSize = " << new_readgroup.PredictedInsertSize << endl;
+        cerr << NAME << " new_readgroup.FlowOrder = " << new_readgroup.FlowOrder << endl;
+        cerr << NAME << " new_readgroup.KeySequence = " << new_readgroup.KeySequence << endl;
+        cerr << NAME << " new_readgroup.SequencingCenter = " << new_readgroup.SequencingCenter << endl;
     }
 
 	BamReader reader;
@@ -360,7 +365,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
         ++n_reads;
 
-        _DEBUG(1) printAlignmentInfo(al);
+        _DEBUG(1) printAlignmentInfo(cerr, al);
 
         string RG_tag;
 
@@ -370,7 +375,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
                 _DEBUG(0) if (n_reads <= debug_reads_to_report) {
                     cerr << NAME << " " << n_reads << " read before processing: ";
-                    printAlignmentInfo(al);
+                    printAlignmentInfo(cerr, al);
                 }
                 _DEBUG(1) cerr << NAME << " " << al.Name << " has tag: RG:Z:'" << RG_tag << "'" << endl;
 
@@ -381,14 +386,14 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
                 _DEBUG(0) if (n_reads <= debug_reads_to_report) {
                     cerr << NAME << " " << n_reads << " read after processing: ";
-                    printAlignmentInfo(al);
+                    printAlignmentInfo(cerr, al);
                 }
 
             } else {
 
                 _DEBUG(0) if (n_reads <= debug_reads_to_report) {
                     cerr << NAME << " " << n_reads << " read before processing: ";
-                    printAlignmentInfo(al);
+                    printAlignmentInfo(cerr, al);
                 }
 
                 if (! al.AddTag("RG", "Z", new_readgroup.ID)) {
@@ -398,14 +403,14 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
                 _DEBUG(0) if (n_reads <= debug_reads_to_report) {
                     cerr << NAME << " " << n_reads << " read after processing: ";
-                    printAlignmentInfo(al);
+                    printAlignmentInfo(cerr, al);
                 }
 
             }
 
         }
 
-        _DEBUG(1) { printAlignmentInfo(al); cout << endl; }
+        _DEBUG(1) { printAlignmentInfo(cerr, al); cerr << endl; }
 
         writer.SaveAlignment(al);
 

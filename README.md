@@ -2,104 +2,114 @@ yoruba
 ======
 
 Yoruba is a toolset to query and manipulate BAM files.  Yoruba is under active
-development.
+development.  Yoruba has an interface similar to [samtools](http://samtools.sourceforge.net)
+and some other tools:
+
+    yoruba <command> [options] [<in.bam>] ...
+
+where `<command>` is one of several specific commands.  Thus far, only `readgroup`
+is completely implemented.
 
 Yoruba uses the BamTools C++ API for handling BAM files
 (<https://github.com/pezmaster31/bamtools>), and SimpleOpt for handling
 command-line options (<http://code.jellycan.com/simpleopt>).
 
-~~~~~~
+readgroup or kojopodipo
+-----------------------
 
-Usage:   yoruba readgroup [options] <in.bam>
-         yoruba kojopodipo [options] <in.bam>
+    yoruba readgroup [options] [<in.bam>]
+    yoruba kojopodipo [options] [<in.bam>]
 
-Either command invokes this function.
+Add or replace read group information in a BAM file.  *Kojopodipo* is the
+Yoruba (Nigeria) word for 'group'.  Either command invokes this function.  If
+`<in.bam>` is not supplied, input is read from `stdin`.  At most one input BAM
+file is allowed.
 
-Add or replace read group information in the BAM file <in.bam>.
+Read group information appears in two places in a BAM file:
 
-Read group information appears in two places in the BAM file:
+1. the *read group dictionary*, found in the header, which contains definitions
+   of individual read groups including the read group ID and any other
+   information associated with the ID, such as library, sample name, etc.
 
-   (1) the read group dictionary, found in the header, which contains the 
-       read group ID and any other information associated with the ID, such 
-       as library, sample name, etc., and thus defines the read group;
-   (2) the RG tag on each read, which specifies one of the IDs that appear
-       in the read group dictionary, and thus declares the read to be part
-       of the given read group.
+2. the *RG tag on each read*, which specifies an ID that appears in the read
+   group dictionary, and declares the read to be part of the identified read
+   group
 
-By default, all reads in the BAM file will be given the supplied read group.
-If the dictionary already defines a read group with the same ID, its definition
-will be replaced with the supplied information.  If the dictionary contains
-other read groups, their definitions will remain in the BAM file header but
-all reads will be given the supplied read group.
+By default, `readgroup` will give all reads the supplied read group.  If the
+read group dictionary already defines a read group with the same ID, its
+definition will be removed and replaced with a definition containing the read
+group information given in the command-line options.  If the dictionary defines
+other read groups, these definitions will remain in the BAM file header, but
+all reads in the BAM file will still be given the new read group.
 
-Other behaviour can be specified using --no-replace, --only-replace and 
---clear-read-group.  See table below.
+This behaviour can be changed by using the options `--no-replace`, `--only-replace` 
+and `--clear-read-group`.  See table below.
 
-The only argument required to specify a valid read group is --ID or --id.
+The only argument required to specify a valid read group is `--ID` or its
+synonym `--id`.
 
-Options: --ID STR | --id STR                 read group identifier
-         --LB STR | --library STR            library
-         --SM STR | --sample-name STR        sample name
-         --DS STR | --description STR        description
-         --DT STR | --date STR               date
-         --PG STR | --programs STR           programs used
-         --PL STR | --platform STR           sequencing platform
-         --PU STR | --platform-unit STR      platform unit
-         --PI STR | --predicted-insert STR   predicted median insert size
-         --FO STR | --flow-order STR         flow order
-         --KS STR | --key-sequence STR       key sequence
-         --CN STR | --sequencing-center STR  sequencing center
-         --o FILE | -o FILE | --output FILE  output file name [default is stdout]
-         --no-replace                        abort if the read group exists
-         --only-replace                      replace just this read group
-         --clear-read-group                  clear all read group information
-         --? | -? | --help                   longer help
+| Option                                     | Description |
+|--------------------------------------------|-------------|
+| `--ID STR` or `--id STR`                   | read group identifier |
+| `--LB STR` or `--library STR`              | read group library |
+| `--SM STR` or `--sample-name STR`          | read group sample name |
+| `--DS STR` or `--description STR`          | read group description |
+| `--DT STR` or `--date STR`                 | read group date |
+| `--PG STR` or `--programs STR`             | read group programs used |
+| `--PL STR` or `--platform STR`             | read group sequencing platform |
+| `--PU STR` or `--platform-unit STR`        | read group platform unit |
+| `--PI STR` or `--predicted-insert STR`     | read group predicted median insert size |
+| `--FO STR` or `--flow-order STR`           | read group flow order |
+| `--KS STR` or `--key-sequence STR`         | read group key sequence |
+| `--CN STR` or `--sequencing-center STR`    | read group sequencing center |
+| `--o FILE` or `-o FILE` or `--output FILE` | output file name [default is stdout] |
+| `--no-replace`                             | abort if the read group exists |
+| `--only-replace`                           | replace just this read group |
+| `--clear-read-group`                       | clear all read group information |
+| `--?` or `-?` or `--help`                  | longer help |
+| `--debug INT`                              | debug info level `INT` |
+| `--reads INT`                              | process at most this many reads |
+| `--progress INT`                           | print reads processed mod `INT` |
+[`readgroup` Options]
 
-         --debug INT     debug info level INT
-         --reads INT     process at most this many reads
-         --progress INT  print reads processed mod INT
+In the options table, `STR` indicates a string argument, `INT` indicates an
+integer value, and `FILE` indicates a filename.
 
-No formatting restrictions are imposed on any of the read group elements. It
-is the user's responsibility to ensure that they conform to the SAM definitions
+No formatting restrictions are imposed on any of the read group strings. It is
+the user's responsibility to ensure that they conform to the SAM definitions
 <http://samtools.sourceforge.net/SAM1.pdf> or to any other tool requirements.
 
 If the output file is not specified, then output is written to stdout.
 
-The --no-replace option will abort if the given read group ID is found in the
+The `--no-replace` option will abort if the given read group ID is found in the
 dictionary, and will only add read group information to reads that don't
 don't already have it.
 
-The --only-replace option modifies information for only those reads in the
+The `--only-replace` option modifies information for only those reads in the
 supplied read group (same ID). Read group information for other reads,
 including those without any other read group information, is unchanged.
 
-The --clear-read-group option removes all read group information from all reads.
+The `--clear-read-group` option removes all read group information from all reads.
 If specified with options defining a read group, then the read group dictionary
 will be cleared prior to defining the new read group.
 
-To summarizing the effects of these options:
+Only one of these options may be supplied at a time.  To summarize the effects
+of these options on the read group dictionary and the RG tag on reads:
 
-                          Read read group (RG) tag status                          
-                    ---------------------------------------------                  
-                        no RG    |    RG matches   |  RG does not                  
-Option                           |       --ID      |  match --ID    RG dictionary  
-------------------  ---------------------------------------------  ----------------
-                                                                                   
-only --ID etc.                 new RG set for all reads             RG added       
-                                                                                   
---no-replace         new RG set         abort         no change     RG added; abort
-                     from --ID                                      if present     
-                                                                                   
---only-replace       no change        no change       no change     RG updated     
-                                                                    from options   
-                                                                                   
---clear-read-group   no change        RG removed      RG removed    cleared        
-  no --ID                                                                          
-                                                                                   
---clear-read-group             new RG set for all reads             cleared, then  
-  with --ID                                                         RG added       
+|                 | Read group (RG) tag on reads                               |||               |
+Option            |    no RG      | RG matches `--ID` | RG does not match `--ID` | RG dictionary |
+------------------|---------------|-------------------|--------------------------|---------------|
+only `--ID` etc.  | new RG set for all reads                                   ||| RG added      |
+`--no-replace`    | new RG set    | abort             | no change                | RG added; abort if present |
+`--only-replace`  | no change     | no change         | no change                | RG updated from options |
+`--clear-read-group`, no `--ID`   | no change | RG removed | RG removed          | cleared       |
+`--clear-read-group`, with `--ID` | new RG set for all reads                   ||| cleared, then RG added |
+[Option effects on read groups]
 
 
-Kojopodipo is the Yoruba (Nigeria) word for 'group'.
+### Informal performance comparison
 
-~~~~~~
+| BAM file              | `yoruba readgroup` | picard `AddOrReplaceReadGroups` |
+|-----------------------|--------------------|---------------------------------|
+| 208G with 2.41B reads | ~23:00:00, 4GB RAM | 31:23:43, >9GB RAM |
+
