@@ -97,17 +97,17 @@ of these options on the read group dictionary and the RG tag on reads:
 
 <table>
 <thead>
-<tr>
-  <th>Option</th>
-  <th align="center" colspan="3" bgcolor="#ffff00">ReadGroup (RG) tag on reads</th>
-  <th>RG dictionary</th>
+<tr bgcolor="#e4e4e4">
+  <th bgcolor="#e4e4e4">Option</th>
+  <th align="center" colspan="3" bgcolor="#e4e4e4">Read Group (RG) tag on reads</th>
+  <th bgcolor="#e4e4e4">RG dictionary</th>
 </tr>
 <tr>
-  <th></th>
-  <th>no RG</th>
-  <th>RG matches <code>--ID</code></th>
-  <th>RG does not match <code>--ID</code></th>
-  <th></th>
+  <th bgcolor="#e4e4e4"></th>
+  <th bgcolor="#f0f0f0">no RG</th>
+  <th bgcolor="#f0f0f0">RG matches <code>--ID</code></th>
+  <th bgcolor="#f0f0f0">RG does not match <code>--ID</code></th>
+  <th bgcolor="#e4e4e4"></th>
 </tr>
 </thead>
 <tbody>
