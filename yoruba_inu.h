@@ -1,7 +1,14 @@
-// yoruba_kojopodipo.h  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_inu.h  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+//
+// Header file for yoruba_inu.cpp
+//
+// Inu is the Yoruba (Nigeria) noun for 'inside'.
+//
+// Uses BamTools C++ API for reading BAM files
 
-#ifndef _YORUBA_KOJOPODIPO_H_
-#define _YORUBA_KOJOPODIPO_H_
+#ifndef _YORUBA_INU_H_
+#define _YORUBA_INU_H_
+
 
 // Std C/C++ includes
 #include <cstdlib>
@@ -12,7 +19,6 @@
 
 // BamTools includes: https://github.com/pezmaster31/bamtools
 #include "api/BamReader.h"
-#include "api/BamWriter.h"
 #include "api/BamAlignment.h"
 #include "api/SamHeader.h"
 #include "api/SamReadGroup.h"
@@ -28,15 +34,15 @@
 #include "yoruba_util.h"
 
 #ifndef _YORUBA_MAIN
-#define NAME "[yoruba_readgroup]"
+#define NAME "[yoruba_contents]"
 #endif
 
-// Functions defined in yoruba_kojopodipo.cpp
+// Functions defined in yoruba_inu.cpp
 //
 namespace yoruba {
 
-int  main_kojopodipo(int argc, char* argv[]);
+int  main_inu(int argc, char* argv[]);
 
 }  // namespace yoruba
 
-#endif // _YORUBA_KOJOPODIPO_H_
+#endif // _YORUBA_INU_H_

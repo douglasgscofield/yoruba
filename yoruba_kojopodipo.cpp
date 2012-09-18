@@ -6,7 +6,7 @@
 // picard's AddOrChangeReadGroups.jar uses a lot of memory and seems to take a long time for
 // what should be a simple task.  We'll see if those opinions hold up :-)
 //
-// Kojopodipo is the Yoruba (Nigeria) word for group.
+// Kojopodipo is the Yoruba (Nigeria) verb for 'to group'.
 //
 // Uses BamTools C++ API for handling BAM files
 
@@ -156,7 +156,7 @@ only --ID etc.             new RG set for all reads             RG added       \
   with --ID                                                     RG added       \n\
 \n\
 \n";
-    cerr << "Kojopodipo is the Yoruba (Nigeria) word for 'group'." << endl;
+    cerr << "Kojopodipo is the Yoruba (Nigeria) verb for 'to group'." << endl;
     cerr << endl;
     }
 
@@ -170,6 +170,9 @@ only --ID etc.             new RG set for all reads             RG added       \
 int 
 yoruba::main_kojopodipo(int argc, char* argv[])
 {
+    SamReadGroup new_readgroup;  // the read group we are creating
+    SamProgram   new_program;    // the program info for yoruba, added to the header
+
     // first process options
 
 	if( argc < 2 ) {
@@ -217,13 +220,6 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
     CSimpleOpt args(argc, argv, kojopodipo_options);
 
-    SamReadGroup new_readgroup;
-    // Initial set of read group information
-    // new_readgroup.ID = "rg_ID";
-    // new_readgroup.Library = "rg_LB";
-    // new_readgroup.Sample = "rg_SM";
-    // new_readgroup.SequencingTechnology = "rg_PL";
-
     while (args.Next()) {
         if (args.LastError() != SO_SUCCESS) {
             cerr << NAME << " invalid argument '" << args.OptionText() << "'" << endl;
@@ -264,9 +260,8 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
     // set up input location; if file not specified, use /dev/stdin
     _DEBUG(0) {
-        for (int i = 0; i < args.FileCount(); ++i) {
+        for (int i = 0; i < args.FileCount(); ++i)
             cerr << NAME << " file argument " << i << ": " << args.File(i) << endl;
-        }
     }
     if (args.FileCount() > 1) {
         cerr << NAME << " requires at most one BAM file specified as input" << endl;
@@ -292,9 +287,30 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         return usage(true);
     }
 
+	BamReader reader;
+
+	if (! reader.Open(input_file)) {
+        cerr << NAME << "could not open BAM input" << endl;
+        return 1;
+    }
+
+    SamHeader header = reader.GetHeader();
+
+    _DEBUG(0) cerr << NAME << " finished reading header from " << input_file << endl;
+
+    new_program.ID = YORUBA_NAME;
+    new_program.ID = new_program.ID + " " + argv[0];
+    new_program.Name = YORUBA_NAME;
+    new_program.Version = YORUBA_VERSION;
+    new_program.CommandLine = YORUBA_NAME;
+    for (int i = 0; i < argc; ++i)
+        new_program.CommandLine = new_program.CommandLine + " " + argv[i];
+
     _DEBUG(0) { 
         if (opt_reads >= 0) 
             cerr << NAME << " modifying up to " << opt_reads << " reads" << endl; 
+        else
+            cerr << NAME << " processing all reads" << endl; 
         cerr << NAME << " opt_noreplace = " << opt_noreplace << endl;
         cerr << NAME << " opt_onlyreplace = " << opt_onlyreplace << endl;
         cerr << NAME << " opt_clear = " << opt_clear << endl;
@@ -310,18 +326,11 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         cerr << NAME << " new_readgroup.FlowOrder = " << new_readgroup.FlowOrder << endl;
         cerr << NAME << " new_readgroup.KeySequence = " << new_readgroup.KeySequence << endl;
         cerr << NAME << " new_readgroup.SequencingCenter = " << new_readgroup.SequencingCenter << endl;
+        cerr << NAME << " new_program.ID = " << new_program.ID << endl;
+        cerr << NAME << " new_program.Name = " << new_program.Name << endl;
+        cerr << NAME << " new_program.Version = " << new_program.Version << endl;
+        cerr << NAME << " new_program.CommandLine = " << new_program.CommandLine << endl;
     }
-
-	BamReader reader;
-
-	if (! reader.Open(input_file)) {
-        cerr << NAME << "could not open BAM input" << endl;
-        return 1;
-    }
-
-    SamHeader header = reader.GetHeader();
-
-    _DEBUG(0) cerr << NAME << " read header from " << input_file << endl;
 
     if (header.HasReadGroups()) {
 
@@ -343,6 +352,8 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     header.ReadGroups.Add(new_readgroup);
 
     _DEBUG(0) printReadGroupDictionary(cerr, header.ReadGroups);
+
+    header.Programs.Add(new_program);
 	
     BamWriter writer;
 
@@ -425,57 +436,5 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 	writer.Close();
 
 	return 0;
-}
-
-
-//-------------------------------------
-
-
-void
-yoruba::printReadGroupDictionary(std::ostream& os, const SamReadGroupDictionary& rgd)
-{
-    if (rgd.IsEmpty()) {
-        os << NAME << " SamReadGroupDictionary ** empty **" << std::endl;
-        return;
-    }
-    int i = 0;
-    for (SamReadGroupConstIterator rgdI = rgd.ConstBegin(); 
-            rgdI != rgd.ConstEnd(); ++rgdI, ++i) {
-        os << NAME << " SamReadGroupDictionary: " << i << "-th entry" << std::endl;
-        printReadGroup(os, *rgdI);
-    }
-}
-
-
-//-------------------------------------
-
-
-void
-yoruba::printReadGroup(std::ostream& os, const SamReadGroup& rg)
-{
-    if (rg.HasID())
-        os << NAME << " @RG ID:'" << rg.ID << "'" << std::endl;
-    if (rg.HasSequencingCenter()) 
-        os << NAME << " @RG CN:'" << rg.SequencingCenter << "'" << std::endl;
-    if (rg.HasDescription())
-        os << NAME << " @RG DS:'" << rg.Description << "'" << std::endl;
-    if (rg.HasProductionDate())   
-        os << NAME << " @RG DT:'" << rg.ProductionDate << "'" << std::endl;
-    if (rg.HasFlowOrder()) 
-        os << NAME << " @RG FO:'" << rg.FlowOrder << "'" << std::endl;
-    if (rg.HasKeySequence()) 
-        os << NAME << " @RG KS:'" << rg.KeySequence << "'" << std::endl;
-    if (rg.HasLibrary()) 
-        os << NAME << " @RG LB:'" << rg.Library << "'" << std::endl;
-    if (rg.HasProgram()) 
-        os << NAME << " @RG PG:'" << rg.Program << "'" << std::endl;
-    if (rg.HasPredictedInsertSize()) 
-        os << NAME << " @RG PI:'" << rg.PredictedInsertSize << "'" << std::endl;
-    if (rg.HasSequencingTechnology()) 
-        os << NAME << " @RG PL:'" << rg.SequencingTechnology << "'" << std::endl;
-    if (rg.HasPlatformUnit()) 
-        os << NAME << " @RG PU:'" << rg.PlatformUnit << "'" << std::endl;
-    if (rg.HasSample()) 
-        os << NAME << " @RG SM:'" << rg.Sample << "'" << std::endl;
 }
 

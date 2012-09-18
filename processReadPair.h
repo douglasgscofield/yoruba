@@ -18,7 +18,7 @@
 #include <string>
 
 #include "ibejiAlignment.h"
-#include "utils.h"
+#include "yoruba_util.h"
 
 
 namespace ibeji {

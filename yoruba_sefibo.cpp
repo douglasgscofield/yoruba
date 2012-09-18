@@ -1,11 +1,11 @@
-// sefibo.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_sefibo.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
 //
 // Sefibo calculates insert sizes based on read mappings within BAM files.
 //
 // Sefibo only works with reads mapping to the same chromosome/contig.  Beyond that 
 // restriction, many options for insert size calculation are provided.
 //
-// Sefibo is the Yoruba (Nigeria) word for insert (insertion point, etc.).
+// Sefibo is the Yoruba (Nigeria) noun for 'insert' (insertion point, etc.).
 //
 // Uses BamTools C++ API for reading BAM files
 
@@ -73,92 +73,105 @@
 // The sum of the absolute values of the tails for two link pair candidate
 // reads.
 
-// link pair candidate
-//
-// A single read mapped such that it is mapped near the end of the contig and
-// is oriented so that its mate may lie off the contig, taking paired-end
-// library insert size into account.
+#include "yoruba_sefibo.h"
 
-//            rd1>
-//    |===========>    or     |==========>   or etc.
-//                              <rd2
-
-// link pair
-//
-// A pair of reads in which each read is a link pair candidate and each is mapped
-// to a different contig.
-
-//            rd1>
-//    |===========>  and  |==========>   or other such compatible configurations
-//                          <rd2
-
-// link pair orphan
-//
-// A pair of reads in which one read is a link pair candidate and the other is
-// unmapped
-
-//            rd1>                   with rd1 unmapped
-//    |===========>          or      |==========>        or etc.
-//    with rd2 unmapped                <rd2
-
-// broken link pair
-//
-// A pair of reads in which one read is a link pair candidate and the other is
-// mapped but is not a link pair candidate
-
-//            rd1>                   rd1> 
-//    |===========>   or      |==========>    |==========>  or etc.
-//      rd2>                                          <rd2
-
-//
-//
-// One read is mapped near the end of a contig, its mate is not mapped to the
-// contig oriented in such a way that its mate is likely to be off the contig: 
-//
-// Find reads in BAM files that are mapped near the end of a contig and
-// oriented so they point off the contig
-
-// Std C/C++ includes
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <list>
 using namespace std;
-
-// BamTools includes
-#include "api/BamMultiReader.h"
-#include "api/BamWriter.h"
-#include "api/BamAlignment.h"
 using namespace BamTools;
-
-// SimpleOpt includes: http://code.jellycan.com/simpleopt, http://code.google.com/p/simpleopt/
-#include "SimpleOpt.h"
-
-// Ibeji includes
-#include "ibejiAlignment.h"
-#include "processReadPair.h"
-#include "utils.h"
 using namespace yoruba;
 
-string  output_bam_filename = "test.bam";
-int32_t pairs_to_process = 20;
-int32_t max_read_length = 101;
-int32_t link_pair_total_tail = 1000;
-int32_t link_pair_crit_tail = 999999;
-bool    link_pair_diff_chrom = true;
+//options
+static string  output_bam_filename = "test.bam";
+static int64_t pairs_to_process = 20;
+static int64_t max_read_length = 101;
+static int64_t link_pair_total_tail = 1000;
+static int64_t link_pair_crit_tail = 999999;
+static bool    link_pair_diff_chrom = true;
+static int64_t mate_tail_est_crit = link_pair_total_tail + max_read_length;
+static bool    debug_ref_mate = false;
 
-int32_t mate_tail_est_crit = link_pair_total_tail + max_read_length;
 
-bool    debug_ref_mate = false;
+//-------------------------------------
 
+
+#ifdef _STANDALONE
 int 
 main(int argc, char* argv[]) {
+    return main_sefibo(argc, argv);
+}
+#endif
 
-	// validate argument count
-	if( argc != 2 ) {
-		cerr << "USAGE: " << argv[0] << " <input BAM file> " << endl;
-		exit(1);
+
+//-------------------------------------
+
+
+static int
+usage(bool long_help = false)
+{
+    cerr << endl;
+    cerr << "Usage:   " << YORUBA_NAME << " insertsize [options] <in.bam>" << endl;
+    cerr << "         " << YORUBA_NAME << " sefibo [options] <in.bam>" << endl;
+    cerr << endl;
+    cerr << "Either command invokes this function." << endl;
+    cerr << endl;
+    cerr << "\
+Calculate the insert size distribution among alignments in <in.bam>.\n\
+\n\
+Options: --read-orientation | -r  FR|FF|RR|RF          expected orientation of reads\n\
+         --insert-type | -t  outer|inner|left|right    insert type to calculate\n\
+         --quantiles | -q LIST                         list of quantiles to report for distribution\n\
+         --better-estimate | -b                        improve insertion distribution calculation\n\
+\n";
+    if (long_help) {
+        cerr << "\
+By default, all reads in the BAM file will be given the supplied read group.\n\
+If the dictionary already defines a read group with the same ID, its definition\n\
+will be replaced with the supplied information.  If the dictionary contains\n\
+other read groups, their definitions will remain in the BAM file header but\n\
+all reads will be given the supplied read group.\n\
+\n\
+The --insert-type argument specifies the manner in which the insert size should\n\
+be calculated.  Assuming orientations relative to the forward strand, insert size\n\
+is calculates as follows: \n\
+\n\
+    outer   [default] maximal 5' extent of the 5'-most read to maximal 3' extent \n\
+            of the 3'-most read, inclusive;\n\
+    inner   maximal 3' extent of the 5'-most read to maximal 5' extent \n\
+            of the 3'-most read, exclusive;\n\
+    left    maximal 5' extent of the 5'-most read to maximal 5' extent \n\
+            of the 3'-most read, inclusive of the left, exclusive of the right;\n\
+    right   maximal 3' extent of the 5'-most read to maximal 3' extent \n\
+            of the 3'-most read, exclusive of the left, inclusive of the right;\n\
+\n\
+\n\
+\n\
+\n\
+\n";
+    }
+    cerr << "         --? | -? | --help                   longer help" << endl;
+    cerr << endl;
+#ifdef _WITH_DEBUG
+    cerr << "         --debug INT     debug info level INT [" << opt_debug << "]" << endl;
+    cerr << "         --reads INT     process at most this many reads [" << opt_reads << "]" << endl;
+    cerr << "         --progress INT  print reads processed mod INT [" << opt_progress << "]" << endl;
+    cerr << endl;
+#endif
+    cerr << "Sefibo is the Yoruba (Nigeria) noun for 'insert'." << endl;
+    cerr << endl;
+    }
+
+    return 1;
+}
+
+
+//-------------------------------------
+
+
+int 
+yoruba::main_sefibo(int argc, char* argv[]) {
+
+	// first process options
+	if( argc < 2 ) {
+		return usage();
 	}
 
 	string filename = argv[1];
@@ -169,24 +182,14 @@ main(int argc, char* argv[]) {
         cerr << "could not open filename " << filename << ", exiting" << endl;
         return 1;
     }
-    cerr << filename << ": Done opening" << endl;
 
     // Header can't be used to accurately determine sort order because samtools never
     // changes it; instead, check after loading each read as is done with "samtools index"
 
-    // We don't need to load an index (right?)
-	// if (!reader.LocateIndex()) {
-    //     const string index_filename = filename + ".bai";
-	//     if (!reader.OpenIndex(index_filename)) {
-    //         cerr << "could not open index" << endl;
-    //     }
-    // }
-
-
     const SamHeader header = reader.GetHeader();
-    cerr << filename << ": Done getting header" << endl;
+
     const RefVector refs = reader.GetReferenceData();
-    cerr << filename << ": Done getting reference data" << endl;
+
 	
     BamWriter writer;
     if (! output_bam_filename.empty()) {
@@ -198,23 +201,23 @@ main(int argc, char* argv[]) {
     }
 
     alignmentMap read1Map;  // a single map, for all reads awaiting their mate
-    typedef map<string,int32_t> stringMap;
+    typedef map<string,int64_t> stringMap;
     typedef stringMap::iterator stringMapI;
     stringMap ref_mates;
     // alignmentMap read1Map, read2Map;
 
 	BamAlignment full_al;
-    int32_t count = 0;
-    uint32_t max_reads_in_map = 0;
-    int32_t n_reads_skipped_unmapped = 0;
-    int32_t n_reads_skipped_mate_unmapped = 0;
-    int32_t n_reads_skipped_wont_see_mate = 0;
-    int32_t n_reads_skipped_mate_tail_est = 0;
-    int32_t n_reads_skipped_ref_mate = 0;
-    int32_t n_reads = 0;
-    int32_t n_singleton_reads = 0;
-    int32_t last_RefID = -1;
-    int32_t last_Position = -1;
+    int64_t count = 0;
+    int64_t max_reads_in_map = 0;
+    int64_t n_reads_skipped_unmapped = 0;
+    int64_t n_reads_skipped_mate_unmapped = 0;
+    int64_t n_reads_skipped_wont_see_mate = 0;
+    int64_t n_reads_skipped_mate_tail_est = 0;
+    int64_t n_reads_skipped_ref_mate = 0;
+    int64_t n_reads = 0;
+    int64_t n_singleton_reads = 0;
+    int64_t last_RefID = -1;
+    int64_t last_Position = -1;
 
     cerr << filename << ": Looking for up to " << pairs_to_process << " link pairs,"
         << " total tail = " << link_pair_total_tail 
@@ -275,7 +278,7 @@ main(int argc, char* argv[]) {
             }
 
             // If the mate likely to also be a link pair candidate, add the read
-            int32_t mate_tail_est = readTailS(al.IsMateMapped(), al.IsMateReverseStrand(),
+            int64_t mate_tail_est = readTailS(al.IsMateMapped(), al.IsMateReverseStrand(),
                             al.MatePosition, refs[al.MateRefID].RefLength, max_read_length);
             if (mate_tail_est <= mate_tail_est_crit) {
                 // the mate tail estimate suggests it might be a link pair candidate

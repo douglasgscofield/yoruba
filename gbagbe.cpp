@@ -194,7 +194,7 @@ using namespace BamTools;
 // Ibeji includes
 #include "ibejiAlignment.h"
 #include "processReadPair.h"
-#include "utils.h"
+#include "yoruba_util.h"
 using namespace yoruba;
 
 string  output_bam_filename = "test.bam";

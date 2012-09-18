@@ -13,6 +13,7 @@ is completely implemented.
 | `yoruba` command   | Action |
 |--------------------|--------|
 | `yoruba readgroup` | Add or replace read group information in a BAM file |
+| `yoruba contents`  | Summarize the contents of a BAM file |
 
 Yoruba uses the BamTools C++ API for handling BAM files
 (<https://github.com/pezmaster31/bamtools>), and SimpleOpt for handling
@@ -25,9 +26,17 @@ readgroup or kojopodipo
     yoruba kojopodipo [options] [<in.bam>]
 
 Add or replace read group information in a BAM file.  *Kojopodipo* is the
-Yoruba (Nigeria) word for 'group'.  Either command invokes this function.  If
+Yoruba (Nigeria) verb for 'to group'.  Either command invokes this function.  If
 `<in.bam>` is not supplied, input is read from `stdin`.  At most one input BAM
 file is allowed.
+
+### Performance
+
+| BAM file                            | `yoruba readgroup`  | picard `AddOrReplaceReadGroups` |
+|-------------------------------------|---------------------|---------------------------------|
+| 208G, 2.41B reads, 10.4M references | ~21h using ~6GB RAM | ~30h, ~9GB RAM |
+
+
 
 Read group information appears in two places in a BAM file:
 
@@ -108,9 +117,9 @@ of these options on the read group dictionary and the RG tag on reads:
 </tr>
 <tr>
   <th bgcolor="#e4e4e4"></th>
-  <th bgcolor="#eaeaea">no RG</th>
-  <th bgcolor="#eaeaea">RG matches <code>--ID</code></th>
-  <th bgcolor="#eaeaea">RG does not match <code>--ID</code></th>
+  <th bgcolor="#eeeeee">no RG</th>
+  <th bgcolor="#eeeeee">RG matches <code>--ID</code></th>
+  <th bgcolor="#eeeeee">RG does not match <code>--ID</code></th>
   <th bgcolor="#e4e4e4"></th>
 </tr>
 </thead>
@@ -150,10 +159,52 @@ of these options on the read group dictionary and the RG tag on reads:
 </table>
 
 
-### Informal performance comparison
 
-| BAM file                           | `yoruba readgroup` | picard `AddOrReplaceReadGroups` |
-|------------------------------------|--------------------|---------------------------------|
-| 208G with 2.41B reads and 10.4M references | ~23:00:00, 4GB RAM | 31:23:43, >9GB RAM |
+contents or inu
+---------------
+
+    yoruba contents [options] [<in.bam>]
+    yoruba inu [options] [<in.bam>]
+
+Summarizes the contents of the BAM file.  *Inu* is the Yoruba (Nigeria) noun
+for 'inside'.  Either command invokes this function.  If `<in.bam>` is not
+supplied, input is read from `stdin`.  At most one input BAM file is allowed.
+No changes to the BAM file are caused by use of this command.
+
+The contents of a BAM file are printed in six sections, the first five comprise
+the header and the last is the reads.  The sections in the order described
+in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
+
+1. the *header line* (`@HD`) contains BAM metadata, and containing the tags
+   `VN` (required if the header line is present), `SO` and `GO`
+
+2. the *reference sequences* (`@SQ`) describe the reference sequences to which
+   the reads in the BAM are alined, and contains the tags `SN` and `LN` (both
+required), and optionally ÀS`, `M5`, `SP`, and `UR`
+
+3. the *read group dictionary* (`@RG`), described under `readgroup` above
+
+4. the *program chain* (`@PG`) describes programs which have manipulated the
+   BAM file, and contains the tags ÌD` (required), `PN`, `CL`, `PP` and `VN`.
+   
+5. *comment lines* (`@CO`) which are individual text lines
+
+6. *reads*, which may be aligned or unaligned.
+
+
+| Option                     | Description |
+|----------------------------|-------------|
+| `--refs-to-report` INT     | number of reference sequences to provide details about |
+| `--reads-to-report` INT    | number of reads to provide details about |
+| `--raw-to-report` INT      | number of characters from the header to print, with `--raw` |
+| `--quit`                   | stop after reporting detailed reads, do not continue |
+| `--quiet`                  | do not report summaries; still checks header validity and `--raw` |
+| `--raw`                    | print raw header information |
+| `--?` or `-?` or `--help`  | longer help |
+| `--debug INT`              | debug info level `INT` |
+| `--reads INT`              | process at most this many reads |
+| `--progress INT`           | print reads processed mod `INT` |
+
+In the options table, `INT` indicates an integer value.
 
 

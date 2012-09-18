@@ -1,8 +1,8 @@
-// ibeji.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_ibeji.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
 //
 // Ibeji finds mapped reads in BAM files that are twinned in particular ways.
 //
-// Ibeji is the Yoruba (Nigeria) word for twin.
+// Ibeji is the Yoruba (Nigeria) noun for 'twin'.
 //
 // Uses BamTools C++ API for reading BAM files
 
@@ -156,7 +156,7 @@ using namespace BamTools;
 // Ibeji includes
 #include "ibejiAlignment.h"
 #include "processReadPair.h"
-#include "utils.h"
+#include "yoruba_util.h"
 using namespace yoruba;
 
 string  output_bam_filename = "test.bam";
