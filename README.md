@@ -10,17 +10,19 @@ and some other tools:
 where `<command>` is one of several specific commands.  Thus far, only `readgroup`
 is completely implemented.
 
-| `yoruba` command   | Action |
-|--------------------|--------|
-| `yoruba readgroup` | Add or replace read group information in a BAM file |
-| `yoruba contents`  | Summarize the contents of a BAM file |
+`readgroup`
+: Add or replace read group information
+
+`contents`
+: Summarize BAM file contents
 
 Yoruba uses the BamTools C++ API for handling BAM files
 (<https://github.com/pezmaster31/bamtools>), and SimpleOpt for handling
 command-line options (<http://code.jellycan.com/simpleopt>).
 
-readgroup or kojopodipo
------------------------
+
+readgroup
+---------
 
     yoruba readgroup [options] [<in.bam>]
     yoruba kojopodipo [options] [<in.bam>]
@@ -30,13 +32,10 @@ Yoruba (Nigeria) verb for 'to group'.  Either command invokes this function.  If
 `<in.bam>` is not supplied, input is read from `stdin`.  At most one input BAM
 file is allowed.
 
-### Performance
-
-| BAM file                            | `yoruba readgroup`  | picard `AddOrReplaceReadGroups` |
-|-------------------------------------|---------------------|---------------------------------|
-| 208G, 2.41B reads, 10.4M references | ~21h using ~6GB RAM | ~30h, ~9GB RAM |
-
-
+`yoruba readgroup` is faster and uses less memory than picard `AddOrReplaceReadGroups`.
+For a 208GB BAM file containing 10.4M reference sequences and 2.41B reads, 
+`AddOrReplaceReadGroups` required ~30 h and ~9 GB RAM to complete, while `yoruba readgroup`
+required ~21 h and ~6 GB RAM. 
 
 Read group information appears in two places in a BAM file:
 
@@ -48,15 +47,14 @@ Read group information appears in two places in a BAM file:
    group dictionary, and declares the read to be part of the identified read
    group
 
-By default, `readgroup` will give all reads the supplied read group.  If the
-read group dictionary already defines a read group with the same ID, its
-definition will be removed and replaced with a definition containing the read
-group information given in the command-line options.  If the dictionary defines
-other read groups, these definitions will remain in the BAM file header, but
-all reads in the BAM file will still be given the new read group.
+By default, all reads in the BAM file will be given the supplied read group.
+If the dictionary already defines a read group with the same ID, its definition
+will be replaced with the supplied information.  If the dictionary contains
+other read groups, their definitions will remain in the BAM file header (if
+present) but all reads will be given the supplied read group.
 
-This behaviour can be changed by using the options `--no-replace`, `--only-replace` 
-and `--clear`.  See table below.
+This behaviour can be changed by using the options `--replace` and `--clear`.
+See table below.
 
 The only argument required to specify a valid read group is `--ID` or its
 synonym `--id`.
@@ -76,8 +74,7 @@ synonym `--id`.
 | `--KS STR` or `--key-sequence STR`         | read group key sequence |
 | `--CN STR` or `--sequencing-center STR`    | read group sequencing center |
 | `--o FILE` or `-o FILE` or `--output FILE` | output file name [default is stdout] |
-| `--no-replace`                             | abort if the read group exists |
-| `--only-replace`                           | replace just this read group |
+| `--replace` STR                            | replace read group STR with --ID
 | `--clear`                                  | clear all read group information |
 | `--?` or `-?` or `--help`                  | longer help |
 | `--debug INT`                              | debug info level `INT` |
@@ -93,20 +90,17 @@ the user's responsibility to ensure that they conform to the SAM definitions
 
 If the output file is not specified, then output is written to stdout.
 
-The `--no-replace` option will abort if the given read group ID is found in the
-dictionary, and will only add read group information to reads that don't
-don't already have it.
+The `--replace` option will replace the identified read group to have the name
+provided in `--ID`, in both its dictionary entry and on reads.  If only `--ID`
+is provided, then the read group is simply renamed.  If any other read group
+options are given, then the read group is redefined as well.
 
-The `--only-replace` option modifies information for only those reads in the
-supplied read group (same ID). Read group information for other reads,
-including those without any other read group information, is unchanged.
-
-The `--clear` option removes all read group information from all reads.
-If specified with options defining a read group, then the read group dictionary
+The `--clear` option removes all read group information from all reads.  If
+specified with options defining a read group, then the read group dictionary
 will be cleared prior to defining the new read group.
 
-Only one of these options may be supplied at a time.  To summarize the effects
-of these options on the read group dictionary and the RG tag on reads:
+Only one of these may be supplied at a time.  To summarize the effects of these
+options on the read group dictionary and the RG tag on reads:
 
 <table>
 <thead>
@@ -118,8 +112,8 @@ of these options on the read group dictionary and the RG tag on reads:
 <tr>
   <th bgcolor="#e4e4e4"></th>
   <th bgcolor="#eeeeee">no RG</th>
-  <th bgcolor="#eeeeee">RG matches <code>--ID</code></th>
-  <th bgcolor="#eeeeee">RG does not match <code>--ID</code></th>
+  <th bgcolor="#eeeeee">RG matches <code>STR</code></th>
+  <th bgcolor="#eeeeee">RG does not match <code>STR</code></th>
   <th bgcolor="#e4e4e4"></th>
 </tr>
 </thead>
@@ -130,18 +124,11 @@ of these options on the read group dictionary and the RG tag on reads:
   <td align="center">RG added</td>
 </tr>
 <tr>
-  <td><code>--no-replace</code></td>
-  <td align="center">new RG set</td>
-  <td align="center">abort</td>
+  <td><code>--replace STR</code></td>
   <td align="center">no change</td>
-  <td align="center">RG added; abort if present</td>
-</tr>
-<tr>
-  <td><code>--only-replace</code></td>
+  <td align="center">RG changed to <code>--ID</code></td>
   <td align="center">no change</td>
-  <td align="center">no change</td>
-  <td align="center">no change</td>
-  <td align="center">RG updated from options</td>
+  <td align="center">RG <code>STR</code> updated with <code>--ID</code>; replaced if any other RG options</td>
 </tr>
 <tr>
   <td><code>--clear</code>, no <code>--ID</code></td>
@@ -160,8 +147,8 @@ of these options on the read group dictionary and the RG tag on reads:
 
 
 
-contents or inu
----------------
+contents
+--------
 
     yoruba contents [options] [<in.bam>]
     yoruba inu [options] [<in.bam>]
@@ -180,7 +167,7 @@ in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
 
 2. the *reference sequences* (`@SQ`) describe the reference sequences to which
    the reads in the BAM are alined, and contains the tags `SN` and `LN` (both
-required), and optionally ÀS`, `M5`, `SP`, and `UR`
+   required), and optionally ÀS`, `M5`, `SP`, and `UR`
 
 3. the *read group dictionary* (`@RG`), described under `readgroup` above
 
@@ -195,7 +182,7 @@ required), and optionally ÀS`, `M5`, `SP`, and `UR`
 | Option                     | Description |
 |----------------------------|-------------|
 | `--refs-to-report` INT     | number of reference sequences to provide details about |
-| `--reads-to-report` INT    | number of reads to provide details about |
+| `--reads-to-report` INT    | number of reads to provide details about [10] |
 | `--raw-to-report` INT      | number of characters from the header to print, with `--raw` |
 | `--quit`                   | stop after reporting detailed reads, do not continue |
 | `--quiet`                  | do not report summaries; still checks header validity and `--raw` |

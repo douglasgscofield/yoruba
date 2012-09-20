@@ -39,6 +39,9 @@ static int32_t      opt_debug = 0;
 static int64_t      opt_reads = -1;
 static int64_t      opt_progress = 0; // 100000;
 #endif
+const  string       delim = "'";
+const  string       sep = "\t";
+const  string       endline = "\n";
 
 
 //-------------------------------------
@@ -213,9 +216,12 @@ yoruba::main_inu(int argc, char* argv[])
 
     if (header.HasVersion() || header.HasSortOrder() || header.HasGroupOrder()) {
         cout << NAME << "[headerline]";
-        if (header.HasVersion()) cout << " VN:'" << header.Version << "'";
-        if (header.HasSortOrder()) cout << " SO:'" << header.SortOrder << "'";
-        if (header.HasGroupOrder()) cout << " GO:'" << header.GroupOrder << "'";
+        if (header.HasVersion()) 
+            cout << sep << "VN:" << delim << header.Version << delim;
+        if (header.HasSortOrder()) 
+            cout << sep << "SO:" << delim << header.SortOrder << delim;
+        if (header.HasGroupOrder()) 
+            cout << sep << "GO:" << delim << header.GroupOrder << delim;
         cout << endl;
     } else cout << NAME << "[headerline] no header line found" << endl;
 
@@ -225,24 +231,24 @@ yoruba::main_inu(int argc, char* argv[])
 
     if (header.HasSequences()) {
         int32_t ref_count = reader.GetReferenceCount();
-        // cout << NAME << "[ref] " << ref_count << " references found in the BAM file" << endl;
         if (ref_count > opt_refs_to_report)
             cout << NAME << "[ref] displaying the first " << opt_refs_to_report 
                 << " reference sequences" << endl;
         refs = reader.GetReferenceData();
         for (int32_t i = 0; i < ref_count && i < opt_refs_to_report; ++i) {
-            cout << NAME << "[ref] @SQ ID:" << i 
-                << "\t" << "NM:" << refs[i].RefName 
-                << "\t" << "LN:" << refs[i].RefLength
-                << endl;
+            cout << NAME << "[ref] " << i << " ";
+            cout << "@SQ";
+            cout << sep << "NM:" << refs[i].RefName 
+                << sep << "LN:" << refs[i].RefLength
+                << endline;
         }
     } else cout << NAME << "[ref] no reference sequences found" << endl;
 
     //----------------- Read groups
 
     if (header.HasReadGroups()) {
-        string prefix = NAME "[readgroup] ";;
-        printReadGroupDictionary(cout, header.ReadGroups, prefix);
+        const string prefix = NAME "[readgroup] ";
+        printReadGroupDictionary(cout, header.ReadGroups, prefix, "@RG", "\t", "'", "\n");
     } else cout << NAME << "[readgroup] no read group dictionary found" << endl;
 
     //----------------- Programs
@@ -250,13 +256,14 @@ yoruba::main_inu(int argc, char* argv[])
     if (header.HasPrograms()) {
         for (SamProgramConstIterator pcI = header.Programs.ConstBegin();
                 pcI != header.Programs.ConstEnd(); ++pcI) {
-            cout << NAME << "[program] @PG";
-            cout << " ID:'" << (*pcI).ID << "'";
-            cout << " PN:'" << (*pcI).Name << "'";
-            cout << " CL:'" << (*pcI).CommandLine << "'";
-            cout << " PP:'" << (*pcI).PreviousProgramID << "'";
-            cout << " VN:'" << (*pcI).Version << "'";
-            cout << endl;
+            cout << NAME << "[program] ";
+            cout << "@PG";
+            cout << sep << "ID:" << delim << (*pcI).ID << delim
+                << sep << "PN:" << delim << (*pcI).Name << delim
+                << sep << "CL:" << delim << (*pcI).CommandLine << delim
+                << sep << "PP:" << delim << (*pcI).PreviousProgramID << delim
+                << sep << "VN:" << delim << (*pcI).Version << delim
+                << endline;
         }
     } else cout << NAME << "[program] no program information found" << endl;
 
@@ -266,7 +273,9 @@ yoruba::main_inu(int argc, char* argv[])
     if (! header.Comments.empty()) {
         for (vector<string>::const_iterator vI = header.Comments.begin();
                 vI < header.Comments.end(); ++vI) {
-            cout << NAME << "[program] @CO '" << (*vI) << "'" << endl;
+            cout << NAME << "[program] ";
+            cout << "@CO";
+            cout << sep << delim << (*vI) << delim << endline;
         }
     } else cout << NAME << "[comment] no comment lines found" << endl;
 

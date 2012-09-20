@@ -35,7 +35,11 @@
 //
 namespace yoruba {
 
-int  main_kojopodipo(int argc, char* argv[]);
+    int 
+    main_kojopodipo(int argc, char* argv[]);
+
+    const BamTools::SamReadGroupDictionary 
+    parseReadGroupDictionaryString(const std::string& in);
 
 }  // namespace yoruba
 

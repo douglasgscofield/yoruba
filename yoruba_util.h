@@ -30,39 +30,47 @@ void
 PrintAlignment(const BamTools::BamAlignment&);
 
 void 
-PrintAlignment(std::ostream& os, const BamTools::BamAlignment& alignment);
+PrintAlignment(std::ostream& os, 
+               const BamTools::BamAlignment& alignment);
 
 void
 printAlignmentInfo(std::ostream& os, 
-                   const BamTools::BamAlignment& alignment, 
-                   int32_t level = 0);
+               const BamTools::BamAlignment& alignment, 
+               int32_t level = 0);
 
 void
 printAlignmentInfo(std::ostream& os, 
-                   const BamTools::BamAlignment& alignment, 
-                   const BamTools::RefVector& refs, 
-                   int32_t level = 0);
+               const BamTools::BamAlignment& alignment, 
+               const BamTools::RefVector& refs, 
+               int32_t level = 0);
 
 void
 printAlignmentInfo_fields(std::ostream& os, 
-                          const BamTools::BamAlignment& alignment, 
-                          int32_t level = 0);
+               const BamTools::BamAlignment& alignment, 
+               int32_t level = 0);
 
 void
 printAlignmentInfo_fields(std::ostream& os, 
-                          const BamTools::BamAlignment& alignment, 
-                          const BamTools::RefVector& refs, 
-                          int32_t level = 0);
+               const BamTools::BamAlignment& alignment, 
+               const BamTools::RefVector& refs, 
+               int32_t level = 0);
 
 void
 printReadGroupDictionary(std::ostream& os, 
-                         const BamTools::SamReadGroupDictionary& rgd,
-                         const std::string& = "@RG ");
+               const BamTools::SamReadGroupDictionary& rgd,
+               const std::string& prefix = "",
+               const std::string& rg_prefix = "@RG",
+               const std::string& rg_sep = "\t",
+               const std::string& rg_delim = "'",
+               const std::string& rg_terminate = "\n");
 
 void
 printReadGroup(std::ostream& os, 
                const BamTools::SamReadGroup& rg,
-               const std::string& = "@RG ");
+               const std::string& rg_prefix = "@RG",
+               const std::string& rg_sep = "\t",
+               const std::string& rg_delim = "'",
+               const std::string& rg_terminate = "\n");
 
 
 } // namespace yoruba
