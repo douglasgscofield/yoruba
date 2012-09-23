@@ -34,7 +34,7 @@
 #include "yoruba_util.h"
 
 #ifndef _YORUBA_MAIN
-#define NAME "[yoruba_contents]"
+#define NAME "[yoruba_inside]"
 #endif
 
 // Functions defined in yoruba_inu.cpp

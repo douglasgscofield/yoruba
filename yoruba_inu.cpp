@@ -1,6 +1,6 @@
 // yoruba_inu.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
 //
-// Inu (English command is contents) summarizes the contents of a BAM file.
+// Inu (English command is inside) summarizes the contents of a BAM file.
 //
 // Inu reads the BAM file structure and summarizes the header, references and read
 // contents.  It can also quietly check the validity of the header, and print raw
@@ -30,8 +30,8 @@ using namespace yoruba;
 static string       input_file;  // defaults to stdin, set from command line
 static int64_t      opt_reads_to_report = 10;
 static bool         opt_quit = false;
-static bool         opt_quiet = false;
 static bool         opt_raw = false;
+static bool         opt_validate = false;
 static int32_t      opt_refs_to_report = 10;
 static int32_t      opt_raw_to_report = 1000;
 #ifdef _WITH_DEBUG
@@ -62,7 +62,7 @@ static int
 usage()
 {
     cerr << endl;
-    cerr << "Usage:   " << YORUBA_NAME << " contents [options] <in.bam>" << endl;
+    cerr << "Usage:   " << YORUBA_NAME << " inside [options] <in.bam>" << endl;
     cerr << "         " << YORUBA_NAME << " inu [options] <in.bam>" << endl;
     cerr << endl;
     cerr << "Either command invokes this function." << endl;
@@ -80,8 +80,7 @@ Output includes:\n\
 Options: --reads-to-report INT  print this many reads [" << opt_reads_to_report << "]\n\
          --refs-to-report INT   print this many references [" << opt_refs_to_report << "]\n\
          --quit                 quit early, don't count all reads\n\
-         --quiet                don't print any details, only check validity; combine\n\
-                                with --raw to only check the header and print raw lines\n\
+         --validate             check validity using BamTools API; very strict\n\
          --raw                  print raw header contents\n\
          --raw-to-report INT    number of --raw header characters to print [" << opt_raw_to_report << "]\n\
          --? | -? | --help      longer help\n\
@@ -113,7 +112,7 @@ yoruba::main_inu(int argc, char* argv[])
 	}
 
     enum { OPT_reads_to_report, OPT_refs_to_report, OPT_raw, OPT_quit,
-        OPT_quiet, OPT_raw_to_report,
+        OPT_validate, OPT_raw_to_report,
 #ifdef _WITH_DEBUG
         OPT_debug, OPT_reads, OPT_progress,
 #endif
@@ -123,7 +122,7 @@ yoruba::main_inu(int argc, char* argv[])
         { OPT_refs_to_report,  "--refs-to-report",  SO_REQ_SEP },
         { OPT_reads_to_report, "--reads-to-report", SO_REQ_SEP },
         { OPT_quit,            "--quit",            SO_NONE },
-        { OPT_quiet,           "--quiet",           SO_NONE },
+        { OPT_validate,        "--validate",        SO_NONE },
         { OPT_raw,             "--raw",             SO_NONE },
         { OPT_raw_to_report,   "--raw-to-report",   SO_REQ_SEP },
         { OPT_help,            "--?",               SO_NONE }, 
@@ -150,7 +149,7 @@ yoruba::main_inu(int argc, char* argv[])
         else if (args.OptionId() == OPT_refs_to_report) 
             opt_refs_to_report = strtol(args.OptionArg(), NULL, 10);
         else if (args.OptionId() == OPT_quit)  opt_quit = true;
-        else if (args.OptionId() == OPT_quiet) opt_quiet = true;
+        else if (args.OptionId() == OPT_validate) opt_validate = true;
         else if (args.OptionId() == OPT_raw)   opt_raw = true;
         else if (args.OptionId() == OPT_raw_to_report) 
             opt_raw_to_report = strtol(args.OptionArg(), NULL, 10);
@@ -188,10 +187,11 @@ yoruba::main_inu(int argc, char* argv[])
 
     SamHeader header = reader.GetHeader();
 
-    // with --quiet (and without --raw) this validity check is the primary operation
-    if (! header.IsValid(true)) {
-        cout << NAME << " header not well-formed, errors are:" << endl;
-        cout << header.GetErrorString() << endl;
+    if (opt_validate) {
+        if (! header.IsValid(true)) { // this check is very strict
+            cout << NAME << " header not well-formed, errors are:" << endl;
+            cout << header.GetErrorString() << endl;
+        }
     }
 
     if (opt_raw) {
@@ -205,11 +205,6 @@ yoruba::main_inu(int argc, char* argv[])
             cout << NAME << " header string, complete contents:" << endl;
             cout << header_printable;
         }
-    }
-
-    if (opt_quiet) { // don't do any more
-	    reader.Close();
-	    return 0;
     }
 
     //----------------- Header metadata

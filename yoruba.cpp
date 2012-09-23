@@ -32,7 +32,7 @@ usage()
     cerr << "Usage:   " << YORUBA_NAME << " <command> [options]" << endl << endl;
     cerr << "         Each command has two names, one in English and one in Yoruba" << endl << endl;
     cerr << "Command: readgroup  | kojopodipo   add or modify read group information" << endl;
-    cerr << "Command: contents   | inu          display summary of bam file contents" << endl;
+    cerr << "Command: inside     | inu          display summary of bam file contents" << endl;
 #ifdef _IMPLEMENTED
     cerr << "         insertsize | sefibo       calculates insert sizes" << endl;
     cerr << "         twinreads  | ibeji        find reads paired in various ways" << endl;
@@ -50,7 +50,7 @@ main (int argc, char* argv[])
     string cmd = argv[1];
     if (cmd == "readgroup" || cmd == "kojopodipo") 
         return main_kojopodipo(argc-1, argv+1);
-    else if (cmd == "contents" || cmd == "inu") 
+    else if (cmd == "inside" || cmd == "inu") 
         return main_inu(argc-1, argv+1);
 #ifdef _IMPLEMENTED
     else if (cmd == "insert" || cmd == "sefibo") 

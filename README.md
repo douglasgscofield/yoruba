@@ -13,7 +13,7 @@ is completely implemented.
 `readgroup`
 : Add or replace read group information
 
-`contents`
+`inside`
 : Summarize BAM file contents
 
 Yoruba uses the BamTools C++ API for handling BAM files
@@ -147,10 +147,10 @@ options on the read group dictionary and the RG tag on reads:
 
 
 
-contents
---------
+inside
+------
 
-    yoruba contents [options] [<in.bam>]
+    yoruba inside [options] [<in.bam>]
     yoruba inu [options] [<in.bam>]
 
 Summarizes the contents of the BAM file.  *Inu* is the Yoruba (Nigeria) noun
@@ -185,7 +185,7 @@ in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
 | `--reads-to-report` INT    | number of reads to provide details about [10] |
 | `--raw-to-report` INT      | number of characters from the header to print, with `--raw` |
 | `--quit`                   | stop after reporting detailed reads, do not continue |
-| `--quiet`                  | do not report summaries; still checks header validity and `--raw` |
+| `--validate`               | check header validity using BamTools API; very strict |
 | `--raw`                    | print raw header information |
 | `--?` or `-?` or `--help`  | longer help |
 | `--debug INT`              | debug info level `INT` |
