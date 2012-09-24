@@ -29,7 +29,7 @@ using namespace yoruba;
 
 static string       input_file;  // defaults to stdin, set from command line
 static int64_t      opt_reads_to_report = 10;
-static bool         opt_quit = false;
+static bool         opt_continue = false;
 static bool         opt_raw = false;
 static bool         opt_validate = false;
 static int32_t      opt_refs_to_report = 10;
@@ -79,7 +79,7 @@ Output includes:\n\
     cerr << "\
 Options: --reads-to-report INT  print this many reads [" << opt_reads_to_report << "]\n\
          --refs-to-report INT   print this many references [" << opt_refs_to_report << "]\n\
-         --quit                 quit early, don't count all reads\n\
+         --continue             continue counting reads until the end of the BAM\n\
          --validate             check validity using BamTools API; very strict\n\
          --raw                  print raw header contents\n\
          --raw-to-report INT    number of --raw header characters to print [" << opt_raw_to_report << "]\n\
@@ -111,7 +111,7 @@ yoruba::main_inu(int argc, char* argv[])
 		return usage();
 	}
 
-    enum { OPT_reads_to_report, OPT_refs_to_report, OPT_raw, OPT_quit,
+    enum { OPT_reads_to_report, OPT_refs_to_report, OPT_raw, OPT_continue,
         OPT_validate, OPT_raw_to_report,
 #ifdef _WITH_DEBUG
         OPT_debug, OPT_reads, OPT_progress,
@@ -121,7 +121,7 @@ yoruba::main_inu(int argc, char* argv[])
     CSimpleOpt::SOption inu_options[] = {
         { OPT_refs_to_report,  "--refs-to-report",  SO_REQ_SEP },
         { OPT_reads_to_report, "--reads-to-report", SO_REQ_SEP },
-        { OPT_quit,            "--quit",            SO_NONE },
+        { OPT_continue,        "--continue",        SO_NONE },
         { OPT_validate,        "--validate",        SO_NONE },
         { OPT_raw,             "--raw",             SO_NONE },
         { OPT_raw_to_report,   "--raw-to-report",   SO_REQ_SEP },
@@ -148,7 +148,7 @@ yoruba::main_inu(int argc, char* argv[])
             opt_reads_to_report = strtoll(args.OptionArg(), NULL, 10);
         else if (args.OptionId() == OPT_refs_to_report) 
             opt_refs_to_report = strtol(args.OptionArg(), NULL, 10);
-        else if (args.OptionId() == OPT_quit)  opt_quit = true;
+        else if (args.OptionId() == OPT_continue)  opt_continue = true;
         else if (args.OptionId() == OPT_validate) opt_validate = true;
         else if (args.OptionId() == OPT_raw)   opt_raw = true;
         else if (args.OptionId() == OPT_raw_to_report) 
@@ -297,7 +297,7 @@ yoruba::main_inu(int argc, char* argv[])
         if (opt_progress && n_reads % opt_progress == 0)
             cerr << NAME << "[read] " << n_reads << " reads processed..." << endl;
 
-        if (opt_quit && n_reads == opt_reads_to_report)
+        if (! opt_continue && n_reads == opt_reads_to_report)
             break;
 	}
 

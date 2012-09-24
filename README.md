@@ -77,9 +77,7 @@ synonym `--id`.
 | `--replace` STR                            | replace read group STR with --ID
 | `--clear`                                  | clear all read group information |
 | `--?` or `-?` or `--help`                  | longer help |
-| `--debug INT`                              | debug info level `INT` |
-| `--reads INT`                              | process at most this many reads |
-| `--progress INT`                           | print reads processed mod `INT` |
+| `--progress INT`                           | print reads processed mod `INT` [100000] |
 
 In the options table, `STR` indicates a string argument, `INT` indicates an
 integer value, and `FILE` indicates a filename.
@@ -162,35 +160,28 @@ The contents of a BAM file are printed in six sections, the first five comprise
 the header and the last is the reads.  The sections in the order described
 in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
 
-1. the *header line* (`@HD`) contains BAM metadata, and containing the tags
-   `VN` (required if the header line is present), `SO` and `GO`
+1. the *header line* (`@HD`) contains BAM metadata
 
 2. the *reference sequences* (`@SQ`) describe the reference sequences to which
-   the reads in the BAM are alined, and contains the tags `SN` and `LN` (both
-   required), and optionally ÀS`, `M5`, `SP`, and `UR`
+   the reads in the BAM are aligned
 
 3. the *read group dictionary* (`@RG`), described under `readgroup` above
 
 4. the *program chain* (`@PG`) describes programs which have manipulated the
-   BAM file, and contains the tags ÌD` (required), `PN`, `CL`, `PP` and `VN`.
+   BAM file
    
 5. *comment lines* (`@CO`) which are individual text lines
 
-6. *reads*, which may be aligned or unaligned.
+6. finally, *reads*, which may be aligned or unaligned.
 
 
 | Option                     | Description |
 |----------------------------|-------------|
 | `--refs-to-report` INT     | number of reference sequences to provide details about |
 | `--reads-to-report` INT    | number of reads to provide details about [10] |
-| `--raw-to-report` INT      | number of characters from the header to print, with `--raw` |
-| `--quit`                   | stop after reporting detailed reads, do not continue |
+| `--continue`               | continue reading after reporting detailed reads, report read number |
 | `--validate`               | check header validity using BamTools API; very strict |
-| `--raw`                    | print raw header information |
 | `--?` or `-?` or `--help`  | longer help |
-| `--debug INT`              | debug info level `INT` |
-| `--reads INT`              | process at most this many reads |
-| `--progress INT`           | print reads processed mod `INT` |
 
 In the options table, `INT` indicates an integer value.
 
