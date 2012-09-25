@@ -3,8 +3,7 @@
 // Inu (English command is inside) summarizes the contents of a BAM file.
 //
 // Inu reads the BAM file structure and summarizes the header, references and read
-// contents.  It can also quietly check the validity of the header, and print raw
-// header contents
+// contents.  It can also check the validity of the header.
 //
 // Inu is the Yoruba (Nigeria) noun for 'inside'.
 //
@@ -30,10 +29,8 @@ using namespace yoruba;
 static string       input_file;  // defaults to stdin, set from command line
 static int64_t      opt_reads_to_report = 10;
 static bool         opt_continue = false;
-static bool         opt_raw = false;
 static bool         opt_validate = false;
 static int32_t      opt_refs_to_report = 10;
-static int32_t      opt_raw_to_report = 1000;
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 0;
 static int64_t      opt_reads = -1;
@@ -81,8 +78,6 @@ Options: --reads-to-report INT  print this many reads [" << opt_reads_to_report 
          --refs-to-report INT   print this many references [" << opt_refs_to_report << "]\n\
          --continue             continue counting reads until the end of the BAM\n\
          --validate             check validity using BamTools API; very strict\n\
-         --raw                  print raw header contents\n\
-         --raw-to-report INT    number of --raw header characters to print [" << opt_raw_to_report << "]\n\
          --? | -? | --help      longer help\n\
 \n";
 #ifdef _WITH_DEBUG
@@ -111,8 +106,7 @@ yoruba::main_inu(int argc, char* argv[])
 		return usage();
 	}
 
-    enum { OPT_reads_to_report, OPT_refs_to_report, OPT_raw, OPT_continue,
-        OPT_validate, OPT_raw_to_report,
+    enum { OPT_reads_to_report, OPT_refs_to_report, OPT_continue, OPT_validate, 
 #ifdef _WITH_DEBUG
         OPT_debug, OPT_reads, OPT_progress,
 #endif
@@ -123,8 +117,6 @@ yoruba::main_inu(int argc, char* argv[])
         { OPT_reads_to_report, "--reads-to-report", SO_REQ_SEP },
         { OPT_continue,        "--continue",        SO_NONE },
         { OPT_validate,        "--validate",        SO_NONE },
-        { OPT_raw,             "--raw",             SO_NONE },
-        { OPT_raw_to_report,   "--raw-to-report",   SO_REQ_SEP },
         { OPT_help,            "--?",               SO_NONE }, 
         { OPT_help,            "-?",                SO_NONE }, 
         { OPT_help,            "--help",            SO_NONE },
@@ -150,9 +142,6 @@ yoruba::main_inu(int argc, char* argv[])
             opt_refs_to_report = strtol(args.OptionArg(), NULL, 10);
         else if (args.OptionId() == OPT_continue)  opt_continue = true;
         else if (args.OptionId() == OPT_validate) opt_validate = true;
-        else if (args.OptionId() == OPT_raw)   opt_raw = true;
-        else if (args.OptionId() == OPT_raw_to_report) 
-            opt_raw_to_report = strtol(args.OptionArg(), NULL, 10);
 #ifdef _WITH_DEBUG
         else if (args.OptionId() == OPT_debug) 
             opt_debug = args.OptionArg() ? atoi(args.OptionArg()) : opt_debug;
@@ -185,25 +174,16 @@ yoruba::main_inu(int argc, char* argv[])
         return 1;
     }
 
+#ifdef _BAMTOOLS_EXTENSION
+    const SamHeader& header = reader.GetHeaderRef();
+#else
     SamHeader header = reader.GetHeader();
+#endif
 
     if (opt_validate) {
         if (! header.IsValid(true)) { // this check is very strict
             cout << NAME << " header not well-formed, errors are:" << endl;
             cout << header.GetErrorString() << endl;
-        }
-    }
-
-    if (opt_raw) {
-        const string header_printable = header.ToString();
-        if (header_printable.length() > uint32_t(opt_raw_to_report)) {
-            cout << NAME << " header string, first " << opt_raw_to_report 
-                << " characters:" << endl;
-            cout << header_printable.substr(0, opt_raw_to_report);
-            cout << endl;
-        } else {
-            cout << NAME << " header string, complete contents:" << endl;
-            cout << header_printable;
         }
     }
 
@@ -237,6 +217,7 @@ yoruba::main_inu(int argc, char* argv[])
                 << sep << "LN:" << refs[i].RefLength
                 << endline;
         }
+        cout << NAME << "[ref] " << ref_count << " reference sequences found" << endl;
     } else cout << NAME << "[ref] no reference sequences found" << endl;
 
     //----------------- Read groups
