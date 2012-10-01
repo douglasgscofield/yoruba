@@ -196,17 +196,17 @@ options on the read group dictionary and the RG tag on reads:
 
 <table>
 <thead>
-<tr bgcolor="#e4e4e4">
-  <th bgcolor="#e4e4e4">Option</th>
-  <th align="center" colspan="3" bgcolor="#e4e4e4">Read Group (RG) tag on reads</th>
-  <th bgcolor="#e4e4e4">RG dictionary</th>
+<tr bgcolor="#e4e4f0">
+  <th bgcolor="#e4e4f0">Option</th>
+  <th align="center" colspan="3" bgcolor="#e4e4f0">Read Group (RG) tag on reads</th>
+  <th bgcolor="#e4e4f0">RG dictionary</th>
 </tr>
 <tr>
-  <th bgcolor="#e4e4e4"></th>
-  <th bgcolor="#eeeeee">no RG</th>
-  <th bgcolor="#eeeeee">RG matches <code>STR</code></th>
-  <th bgcolor="#eeeeee">RG does not match <code>STR</code></th>
-  <th bgcolor="#e4e4e4"></th>
+  <th bgcolor="#e4e4f0"></th>
+  <th bgcolor="#eeeefa">no RG</th>
+  <th bgcolor="#eeeefa">RG matches <code>STR</code></th>
+  <th bgcolor="#eeeefa">RG does not match <code>STR</code></th>
+  <th bgcolor="#e4e4f0"></th>
 </tr>
 </thead>
 <tbody>
