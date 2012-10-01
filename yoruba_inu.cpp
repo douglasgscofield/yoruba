@@ -36,9 +36,9 @@ static int32_t      opt_debug = 0;
 static int64_t      opt_reads = -1;
 static int64_t      opt_progress = 0; // 100000;
 #endif
-const  string       delim = "'";
-const  string       sep = "\t";
-const  string       endline = "\n";
+static const string delim = "'";
+static const string sep = "\t";
+static const string endline = "\n";
 
 
 //-------------------------------------
@@ -175,7 +175,7 @@ yoruba::main_inu(int argc, char* argv[])
     }
 
 #ifdef _BAMTOOLS_EXTENSION
-    const SamHeader& header = reader.GetHeaderRef();
+    const SamHeader& header = reader.GetConstSamHeader();
 #else
     SamHeader header = reader.GetHeader();
 #endif
@@ -202,18 +202,18 @@ yoruba::main_inu(int argc, char* argv[])
 
     //----------------- Reference sequences
 
-    RefVector refs;
+    const RefVector& refs = reader.GetReferenceData();
 
     if (header.HasSequences()) {
         int32_t ref_count = reader.GetReferenceCount();
         if (ref_count > opt_refs_to_report)
             cout << NAME << "[ref] displaying the first " << opt_refs_to_report 
                 << " reference sequences" << endl;
-        refs = reader.GetReferenceData();
         for (int32_t i = 0; i < ref_count && i < opt_refs_to_report; ++i) {
             cout << NAME << "[ref] " << i << " ";
             cout << "@SQ";
-            cout << sep << "NM:" << refs[i].RefName 
+            // these tags must exist for a reference sequence
+            cout << sep << "NM:" << delim << refs[i].RefName << delim
                 << sep << "LN:" << refs[i].RefLength
                 << endline;
         }
@@ -234,12 +234,17 @@ yoruba::main_inu(int argc, char* argv[])
                 pcI != header.Programs.ConstEnd(); ++pcI) {
             cout << NAME << "[program] ";
             cout << "@PG";
-            cout << sep << "ID:" << delim << (*pcI).ID << delim
-                << sep << "PN:" << delim << (*pcI).Name << delim
-                << sep << "CL:" << delim << (*pcI).CommandLine << delim
-                << sep << "PP:" << delim << (*pcI).PreviousProgramID << delim
-                << sep << "VN:" << delim << (*pcI).Version << delim
-                << endline;
+            if ((*pcI).HasID())
+                cout << sep << "ID:" << delim << (*pcI).ID << delim;
+            if ((*pcI).HasName())
+                cout << sep << "PN:" << delim << (*pcI).Name << delim;
+            if ((*pcI).HasCommandLine())
+                cout << sep << "CL:" << delim << (*pcI).CommandLine << delim;
+            if ((*pcI).HasPreviousProgramID())
+                cout << sep << "PP:" << delim << (*pcI).PreviousProgramID << delim;
+            if ((*pcI).HasVersion())
+                cout << sep << "VN:" << delim << (*pcI).Version << delim;
+            cout << endline;
         }
     } else cout << NAME << "[program] no program information found" << endl;
 

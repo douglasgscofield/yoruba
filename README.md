@@ -1,24 +1,118 @@
 yoruba
 ======
 
-Yoruba is a toolset to query and manipulate BAM files.  Yoruba is under active
-development.  Yoruba has an interface similar to [samtools](http://samtools.sourceforge.net)
-and some other tools:
+Yoruba is a toolset to query and manipulate BAM files.  Yoruba has an
+command-option interface reminiscent of
+[samtools](http://samtools.sourceforge.net) and some other tools:
 
     yoruba <command> [options] [<in.bam>] ...
 
-where `<command>` is one of several specific commands.  Thus far, only `readgroup`
-is completely implemented.
+where `<command>` is one of several specific commands.
 
-`readgroup`
-: Add or replace read group information
+`forget`
+: Forget unused reference sequences in a BAM file
 
 `inside`
 : Summarize BAM file contents
 
-Yoruba uses the BamTools C++ API for handling BAM files
-(<https://github.com/pezmaster31/bamtools>), and SimpleOpt for handling
-command-line options (<http://code.jellycan.com/simpleopt>).
+`readgroup`
+: Add or replace read group information
+
+Yoruba uses the [BamTools][] C++ API for handling BAM files and [SimpleOpt][]
+for handling command-line options.
+
+**NOTE**: yoruba is not yet in production shape.  [Contact me][Contact] if you
+would like to use [yoruba][] and I'll help get you started.
+
+[Contact]:   mailto:douglasgscofield@gmail.com
+[BamTools]:  https://github.com/pezmaster31/bamtools
+[SimpleOpt]: http://code.jellycan.com/simpleopt
+
+
+forget
+------
+
+    yoruba forget [options] <in.bam>
+    yoruba gbagbe [options] <in.bam>
+
+Dynamically reduces the number of reference sequences in a BAM file.  *Gbagbe*
+is the Yoruba (Nigeria) verb for 'to forget'.  Either command invokes this
+function.  If `<in.bam>` is not supplied, input is read from `stdin`.  At most
+one input BAM file is allowed.  No changes to the BAM file are caused by use of
+this command.
+
+`yoruba gbagbe` will remove reference sequences from the BAM header that have
+no reads mapped to them.  This can be particularly helpful when a BAM
+containing a subset of reads is created from a larger BAM containing a large
+set of reference sequences.  With e.g., `samtools`, the subset BAM will still
+contain the complete set of reference sequence names in the header of the
+original BAM.  This can be very wasteful of space if many reference sequences
+appeared in that file, and increases the time required for downstream tools to
+read the BAM.  `yoruba gbagbe` makes two passes over the BAM file, the first to
+determine which reference sequences are mapped to, and the second to write the
+new BAM.
+
+Only the `@SQ` lines of the header are modified; all other sections of the
+header are left alone, except `yoruba forget` is added to the program chain
+(`@PG`).
+
+It would be very useful to read the BAM file from stdin, to be able to include
+this in a pipe.  That requires writing the reads on stdin to a temp file until
+the last read has been read, then processing the header, writing it to stdout
+along with the reads from the temp file.  This will be added in the future.
+
+
+| Option                                     | Description |
+|--------------------------------------------|-------------|
+| `--o FILE` or `-o FILE` or `--output FILE` | output file name [default is stdout] |
+| `--?` or `-?` or `--help`                  | longer help |
+| `--progress INT`                           | print reads processed mod `INT` [100000] |
+
+In the options table, `FILE` indicates a filename, and `INT` indicates an
+integer value, 
+
+
+
+inside
+------
+
+    yoruba inside [options] [<in.bam>]
+    yoruba inu [options] [<in.bam>]
+
+Summarizes the contents of the BAM file.  *Inu* is the Yoruba (Nigeria) noun
+for 'inside'.  Either command invokes this function.  If `<in.bam>` is not
+supplied, input is read from `stdin`.  At most one input BAM file is allowed.
+No changes to the BAM file are caused by use of this command.
+
+The contents of a BAM file are printed in six sections, the first five comprise
+the header and the last is the reads.  The sections in the order described
+in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
+
+1. the *header line* (`@HD`) contains BAM metadata
+
+2. the *reference sequences* (`@SQ`) describe the reference sequences to which
+   the reads in the BAM are aligned
+
+3. the *read group dictionary* (`@RG`), described under `readgroup` above
+
+4. the *program chain* (`@PG`) describes programs which have manipulated the
+   BAM file
+   
+5. *comment lines* (`@CO`) which are individual text lines
+
+6. finally, *reads*, which may be aligned or unaligned.
+
+
+| Option                     | Description |
+|----------------------------|-------------|
+| `--refs-to-report` INT     | number of reference sequences to provide details about |
+| `--reads-to-report` INT    | number of reads to provide details about [10] |
+| `--continue`               | continue reading after reporting detailed reads, report read number |
+| `--validate`               | check header validity using BamTools API; very strict |
+| `--?` or `-?` or `--help`  | longer help |
+
+In the options table, `INT` indicates an integer value.
+
 
 
 readgroup
@@ -143,46 +237,5 @@ options on the read group dictionary and the RG tag on reads:
 </tbody>
 </table>
 
-
-
-inside
-------
-
-    yoruba inside [options] [<in.bam>]
-    yoruba inu [options] [<in.bam>]
-
-Summarizes the contents of the BAM file.  *Inu* is the Yoruba (Nigeria) noun
-for 'inside'.  Either command invokes this function.  If `<in.bam>` is not
-supplied, input is read from `stdin`.  At most one input BAM file is allowed.
-No changes to the BAM file are caused by use of this command.
-
-The contents of a BAM file are printed in six sections, the first five comprise
-the header and the last is the reads.  The sections in the order described
-in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
-
-1. the *header line* (`@HD`) contains BAM metadata
-
-2. the *reference sequences* (`@SQ`) describe the reference sequences to which
-   the reads in the BAM are aligned
-
-3. the *read group dictionary* (`@RG`), described under `readgroup` above
-
-4. the *program chain* (`@PG`) describes programs which have manipulated the
-   BAM file
-   
-5. *comment lines* (`@CO`) which are individual text lines
-
-6. finally, *reads*, which may be aligned or unaligned.
-
-
-| Option                     | Description |
-|----------------------------|-------------|
-| `--refs-to-report` INT     | number of reference sequences to provide details about |
-| `--reads-to-report` INT    | number of reads to provide details about [10] |
-| `--continue`               | continue reading after reporting detailed reads, report read number |
-| `--validate`               | check header validity using BamTools API; very strict |
-| `--?` or `-?` or `--help`  | longer help |
-
-In the options table, `INT` indicates an integer value.
 
 

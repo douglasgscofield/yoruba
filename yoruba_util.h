@@ -8,6 +8,9 @@
 #include <iomanip>
 #include <string>
 
+// #define NDEBUG  // uncomment to remove assert() code
+#include <assert.h>
+
 // BamTools includes: https://github.com/pezmaster31/bamtools
 #include "api/BamReader.h"
 #include "api/BamAlignment.h"

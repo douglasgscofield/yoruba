@@ -16,10 +16,7 @@
 //
 //
 // TODO
-//
-// Write usage
-// Write README.md
-//
+
 
 #include "yoruba_kojopodipo.h"
 
@@ -36,13 +33,12 @@ static string       dictionary_string;
 static bool         opt_replace;
 static string       replace_string;
 static bool         opt_clear = false;
-// leave debug options in
 #ifdef _WITH_DEBUG
-#endif
 static int32_t      opt_debug = 0;
 static int64_t      opt_reads = -1;
 static int64_t      opt_progress = 100000;
 static int64_t      debug_reads_to_report = 1;
+#endif
 
 
 //-------------------------------------
@@ -171,12 +167,6 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     SamReadGroup new_rg;  // the read group we are creating
     SamProgram   new_program;    // the program info for yoruba, added to the header
 
-    // first process options
-
-	if( argc < 2 ) {
-		return usage();
-	}
-
     new_program.ID = YORUBA_NAME;
     new_program.ID = new_program.ID + " " + argv[0];
     new_program.Name = YORUBA_NAME;
@@ -184,6 +174,12 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     new_program.CommandLine = YORUBA_NAME;
     for (int i = 0; i < argc; ++i)
         new_program.CommandLine = new_program.CommandLine + " " + argv[i];
+
+    // first process options
+
+	if( argc < 2 ) {
+		return usage();
+	}
 
     enum { OPT_ID, OPT_LB, OPT_SM, OPT_DS, OPT_DT, OPT_PG, OPT_PL, OPT_PU, OPT_PI, OPT_FO,
         OPT_KS, OPT_CN, OPT_dictionary, OPT_output, OPT_replace, OPT_clear,
@@ -214,13 +210,11 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         { OPT_help,        "--?", SO_NONE }, 
         { OPT_help,        "-?", SO_NONE }, 
         { OPT_help,        "--help", SO_NONE },
-// leave debug options in
 #ifdef _WITH_DEBUG
-#endif
         { OPT_debug,       "--debug", SO_REQ_SEP },
         { OPT_reads,       "--reads", SO_REQ_SEP },
         { OPT_progress,    "--progress", SO_REQ_SEP },
-// end debug options
+#endif
         SO_END_OF_OPTIONS
     };
 
@@ -265,16 +259,14 @@ yoruba::main_kojopodipo(int argc, char* argv[])
             opt_replace = true; replace_string = args.OptionArg();
         } else if (args.OptionId() == OPT_clear) {
             opt_clear = true;
-// leave debug options in 
 #ifdef _WITH_DEBUG
-#endif
         } else if (args.OptionId() == OPT_debug) {
             opt_debug = args.OptionArg() ? atoi(args.OptionArg()) : opt_debug;
         } else if (args.OptionId() == OPT_reads) {
             opt_reads = strtoll(args.OptionArg(), NULL, 10);
         } else if (args.OptionId() == OPT_progress) {
             opt_progress = args.OptionArg() ? strtoll(args.OptionArg(), NULL, 10) : opt_progress;
-// end debug options
+#endif
         } else {
             cerr << NAME << " unprocessed argument '" << args.OptionText() << "'" << endl;
             return 1;
@@ -282,7 +274,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     }
 
     // set up input location; if file not specified, use /dev/stdin
-    _DEBUG(0) {
+    _DEBUG(1) {
         for (int i = 0; i < args.FileCount(); ++i)
             cerr << NAME << " file argument " << i << ": " << args.File(i) << endl;
     }
@@ -291,11 +283,11 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         return usage();
     } else if (args.FileCount() == 1) {
         input_file = args.File(0);
-    } else if (input_file.empty()) {  // don't replace if not empty, a defauult is set
+    } else if (input_file.empty()) {  // if unset, read from stdin or its equivalent
         input_file = "/dev/stdin";
     }
 
-    // set up output; if file not specified, use /dev/stdout
+    // set up output; if file not specified, use stdout or its equivalent
     if (output_file.empty()) {
         output_file = "/dev/stdout";
     }
@@ -319,7 +311,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
     SamHeader header = reader.GetHeader();
 
-    _DEBUG(0) { 
+    _DEBUG(1) { 
         if (opt_reads >= 0) 
             cerr << NAME << " modifying up to " << opt_reads << " reads" << endl; 
         else
@@ -350,8 +342,8 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     //-------------------------------------  @RG: read group dictionary
     // the read group dictionary may not exist though there are RG tags on reads
 
-    _DEBUG(0) cerr << NAME << " read group dictionary before modifying it" << endl;
-    _DEBUG(0) printReadGroupDictionary(cerr, header.ReadGroups);
+    _DEBUG(1) cerr << NAME << " read group dictionary before modifying it" << endl;
+    _DEBUG(1) printReadGroupDictionary(cerr, header.ReadGroups);
 
     if (opt_clear) {
         if (header.HasReadGroups())
@@ -367,8 +359,8 @@ yoruba::main_kojopodipo(int argc, char* argv[])
             return 1;
         }
         header.ReadGroups.Add(rgd);
-        _DEBUG(0) cerr << NAME << " dictionary after adding parsed string '" << dictionary_string << "'" << endl;
-        _DEBUG(0) printReadGroupDictionary(cerr, header.ReadGroups);
+        _DEBUG(1) cerr << NAME << " dictionary after adding parsed string '" << dictionary_string << "'" << endl;
+        _DEBUG(1) printReadGroupDictionary(cerr, header.ReadGroups);
     }
 
     if (opt_replace) {  // --replace was given
@@ -390,8 +382,8 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         header.ReadGroups.Add(new_rg.ID);
     }
 
-    _DEBUG(0) cerr << NAME << " read group dictionary after modifying it" << endl;
-    _DEBUG(0) printReadGroupDictionary(cerr, header.ReadGroups);
+    _DEBUG(1) cerr << NAME << " read group dictionary after modifying it" << endl;
+    _DEBUG(1) printReadGroupDictionary(cerr, header.ReadGroups);
 
     //-------------------------------------  @PG: programs
 
@@ -424,7 +416,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
         ++n_reads;
 
-        _DEBUG(0) if (n_reads <= debug_reads_to_report) {
+        _DEBUG(1) if (n_reads <= debug_reads_to_report) {
             cerr << NAME << " " << n_reads << " read before processing: ";
             printAlignmentInfo(cerr, al);
         }
@@ -451,7 +443,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
         }
 
-        _DEBUG(0) if (n_reads <= debug_reads_to_report) {
+        _DEBUG(1) if (n_reads <= debug_reads_to_report) {
             cerr << NAME << " " << n_reads << " read after processing: ";
             printAlignmentInfo(cerr, al);
         }
@@ -462,7 +454,10 @@ yoruba::main_kojopodipo(int argc, char* argv[])
             cerr << NAME << " " << n_reads << " reads processed..." << endl;
 	}
 
-    _DEBUG(0) cerr << NAME << " " << n_reads << " reads processed" << endl;
+    if (opt_progress) 
+        cerr << NAME << " " << n_reads << " reads processed" << endl;
+    else 
+        _DEBUG(1) cerr << NAME << " " << n_reads << " reads processed" << endl;
 
 	reader.Close();
 	writer.Close();
@@ -479,33 +474,61 @@ yoruba::parseReadGroupDictionaryString(const string& in)
 {
     SamReadGroupDictionary rgd, empty_rgd;
     SamReadGroup rg;
+    const char* dict_begin_err = " read group dictionary line does not begin with '@RG\\t'";
+    const char* dict_escape_err = " only '\\t' and '\\n' allowed as escape characters in read group dictionary";
+    const char* dict_malformed_err = " read group dictionary malformed";
     uint32_t pos, prev_pos;
     string this_tag, this_val;
-    if (in.empty() || in.substr(0, 5) != "@RG\\t") {
-        cerr << NAME << " dictionary string does not begin with '@RG\\t'" << endl;
+
+    string dict;  // holds the dictionary string after processing escape characters
+
+    bool backslash_seen = false;
+    for (size_t i = 0; i < in.length(); ++i) {
+        if (in[i] == '\\') {
+            if (backslash_seen) {
+                cerr << NAME << dict_escape_err << endl;
+                return empty_rgd;
+            }
+            backslash_seen = true;
+        } else if (in[i] == 't') {
+            dict += (backslash_seen ? '\t' : in[i]); backslash_seen = false;
+        } else if (in[i] == 'n') {
+            dict += (backslash_seen ? '\n' : in[i]); backslash_seen = false;
+        } else {
+            if (backslash_seen) {
+                cerr << NAME << dict_escape_err << endl;
+                return empty_rgd;
+            }
+            dict += in[i];
+        }
+    }
+
+    if (dict.empty() || dict.substr(0, 4) != "@RG\t") {
+        cerr << NAME << dict_begin_err << endl;
         return empty_rgd;
     }
-    pos = prev_pos = 5;
+
+    // parse the dictionary string
+    pos = prev_pos = 4;
     this_tag = this_val = "";
-    while (pos < in.length()) {
-        switch (in[pos]) {
+    while (pos < dict.length()) {
+        switch (dict[pos]) {
             case ':': 
                 if (prev_pos < pos) {
-                    this_tag = in.substr(prev_pos, (pos - prev_pos));
-                    _DEBUG(0) cerr << "after ':', this_tag = " << this_tag << endl;
+                    this_tag = dict.substr(prev_pos, (pos - prev_pos));
+                    _DEBUG(1) cerr << "after ':', this_tag = " << this_tag << endl;
                 } else return empty_rgd;
                 prev_pos = pos + 1;
                 break;
-            case '\\': 
-                if (pos + 1 >= in.length() 
-                    || (in[pos + 1] != 't' && in[pos + 1] != 'n')) {
-                    cerr << NAME << " only '\\t' and '\\n' escape chars allowed in dictionary string" << endl;
+            case '\t':
+            case '\n':
+                if (pos + 1 >= dict.length()) {
+                    cerr << NAME << dict_malformed_err << endl;
                     return empty_rgd;
                 }
-
                 if (prev_pos < pos) {
-                    this_val = in.substr(prev_pos, (pos - prev_pos));
-                    _DEBUG(0) cerr << "after '\\', this_val = " << this_val << endl;
+                    this_val = dict.substr(prev_pos, (pos - prev_pos));
+                    _DEBUG(1) cerr << "after escape character, this_val = " << this_val << endl;
                     if (this_tag == "ID") rg.ID = this_val;
                     else if (this_tag == "LB") rg.Library = this_val;
                     else if (this_tag == "SM") rg.Sample = this_val;
@@ -519,14 +542,14 @@ yoruba::parseReadGroupDictionaryString(const string& in)
                     else if (this_tag == "KS") rg.KeySequence = this_val;
                     else if (this_tag == "CN") rg.SequencingCenter = this_val;
                     else return empty_rgd;
-                    if (in[pos + 1] == 'n') {
-                        if (pos + 2 < in.length() && in.substr((pos + 2), 5) != "@RG\\t") {
-                            cerr << NAME << " dictionary string does not continue with '@RG\\t'" << endl;
+                    if (dict[pos] == '\n') {
+                        if (pos + 1 < dict.length() && dict.substr((pos + 1), 4) != "@RG\t") {
+                            cerr << NAME << dict_begin_err << endl;
                             return empty_rgd;
                         }
                         rgd.Add(rg);
                         rg.Clear();
-                        pos = pos + 5;
+                        pos = pos + 4;
                     }
                 }
                 this_tag = this_val = "";
@@ -539,7 +562,7 @@ yoruba::parseReadGroupDictionaryString(const string& in)
         ++pos;
     }
     if (! this_tag.empty() || ! this_val.empty()) {
-        cerr << NAME << " malformed read group string '" << in << "'" << endl;
+        cerr << NAME << dict_malformed_err << endl;
         return empty_rgd;
     }
     return rgd;
