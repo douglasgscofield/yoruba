@@ -60,9 +60,9 @@ BAM.
 For paired-end reads with an aligned mate, the reference sequence of the
 aligned mate is mentioned in the BAM record for the read.  By default, `yoruba
 forget` will keep descriptions of reference sequences mentioned for mates.
-With the `--no-mate` option, these references mentioned only for mates, and the
-reference sequence ID for the mate will be changed to `-1`, indicating a
-missing reference sequence description.
+With the `--no-mate` option, these references mentioned only for mates will be
+forgotten, and the reference sequence ID for the mate will be changed to `-1`,
+indicating a missing reference sequence description.
 
 
 | Option                                     | Description |
