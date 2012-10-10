@@ -20,7 +20,6 @@
 //
 //
 // TODO
-// xxx solve reference sequence issues
 //
 
 #include "yoruba_gbagbe.h"
@@ -29,7 +28,7 @@ using namespace std;
 using namespace BamTools;
 using namespace yoruba;
 
-static string       input_file;  // will eventually default to stdin, set from command line
+static string       input_file;
 static string       output_file;  // defaults to stdout, set with -o FILE
 static bool         opt_mate = true; // with --no-mate, forget references for mates too
 #ifdef _WITH_DEBUG
@@ -193,29 +192,9 @@ yoruba::main_gbagbe(int argc, char* argv[])
         output_file = "/dev/stdout";
     }
 
-    // gbagba workflow
-    //
-    // create new SamHeader object
-    // read header, get const SamHeader& ref
-    // if refs.empty()
-    //   exit 1, no references to forget
-    // to the new header object, copy over 
-    //   metadata
-    //   read group dictionary
-    //   programs
-    //     update the program list with yoruba forget
-    //   comments
-    // allocate refd[], vector of uint64_t length reader.GetReferenceCount()
-    // while (reader.GetNextAlignmentCore(al) {
-    //   if (al.IsMapped())
-    //     ++refd[al.RefID];
-    // }
-    // Go through refd[], for each nonzero entry add its value in the sequence of nonzero entries
-    // Create references in new header object 
-    // rewind BAM file to beginning of reads
-    //
 
-    //----------------- Open file, start reading data
+    //----------------- Open input BAM, create header for output BAM
+
 
 	BamReader reader;
 
@@ -236,19 +215,15 @@ yoruba::main_gbagbe(int argc, char* argv[])
     SamHeader header = reader.GetHeader();
 #endif
 
-    SamHeader new_header;  // the new header we are creating
+    //----------------- Create the header for the new BAM
 
-    //----------------- Header metadata
+    SamHeader new_header;
 
     new_header.Version = header.Version;
     new_header.SortOrder = header.SortOrder;
     new_header.GroupOrder = header.GroupOrder;
 
-    //----------------- Read groups
-
     new_header.ReadGroups = header.ReadGroups;
-
-    //----------------- Programs
 
     for (SamProgramConstIterator pcI = header.Programs.ConstBegin(); 
             pcI != header.Programs.End(); ++pcI) {
@@ -261,8 +236,6 @@ yoruba::main_gbagbe(int argc, char* argv[])
         }
     }
     new_header.Programs.Add(new_program);
-
-    //----------------- Comments
 
     new_header.Comments = header.Comments;
 
