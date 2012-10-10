@@ -154,7 +154,7 @@ only --ID etc.           new RG set for all reads             RG added       \n\
     cerr << endl;
     }
 
-    return 1;
+    return EXIT_FAILURE;
 }
 
 
@@ -269,12 +269,12 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 #endif
         } else {
             cerr << NAME << " unprocessed argument '" << args.OptionText() << "'" << endl;
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
     // set up input location; if file not specified, use /dev/stdin
-    _DEBUG(1) {
+    IF_DEBUG(1) {
         for (int i = 0; i < args.FileCount(); ++i)
             cerr << NAME << " file argument " << i << ": " << args.File(i) << endl;
     }
@@ -306,12 +306,12 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
 	if (! reader.Open(input_file)) {
         cerr << NAME << "could not open BAM input" << endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     SamHeader header = reader.GetHeader();
 
-    _DEBUG(1) { 
+    IF_DEBUG(2) { 
         if (opt_reads >= 0) 
             cerr << NAME << " modifying up to " << opt_reads << " reads" << endl; 
         else
@@ -342,13 +342,13 @@ yoruba::main_kojopodipo(int argc, char* argv[])
     //-------------------------------------  @RG: read group dictionary
     // the read group dictionary may not exist though there are RG tags on reads
 
-    _DEBUG(1) cerr << NAME << " read group dictionary before modifying it" << endl;
-    _DEBUG(1) printReadGroupDictionary(cerr, header.ReadGroups);
-
-    if (opt_clear) {
-        if (header.HasReadGroups())
-            header.ReadGroups.Clear();
+    IF_DEBUG(1) {
+        cerr << NAME << " read group dictionary before modifying it:" << endl;
+        printReadGroupDictionary(cerr, header.ReadGroups);
     }
+
+    if (opt_clear && header.HasReadGroups())
+        header.ReadGroups.Clear();
 
     if (opt_dictionary) {
         if (header.HasReadGroups())
@@ -356,14 +356,17 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         SamReadGroupDictionary rgd = parseReadGroupDictionaryString(dictionary_string);
         if (rgd.IsEmpty()) {
             cerr << NAME << " error parsing read group dictionary" << endl;
-            return 1;
+            return EXIT_FAILURE;
         }
         header.ReadGroups.Add(rgd);
-        _DEBUG(1) cerr << NAME << " dictionary after adding parsed string '" << dictionary_string << "'" << endl;
-        _DEBUG(1) printReadGroupDictionary(cerr, header.ReadGroups);
+        IF_DEBUG(1) {
+            cerr << NAME << " dictionary after adding '" << dictionary_string << "':" << endl;
+            printReadGroupDictionary(cerr, header.ReadGroups);
+        }
     }
 
     if (opt_replace) {  // --replace was given
+
         if (header.ReadGroups.Contains(replace_string)) {
             if (other_rg_opts) {  // more than --ID was given, replace entry and add new one
                 header.ReadGroups.Remove(replace_string);
@@ -376,14 +379,19 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         } else {
             header.ReadGroups.Add(new_rg.ID);
         }
+
     }  else {
+
         if (header.ReadGroups.Contains(new_rg.ID))
             header.ReadGroups.Remove(new_rg.ID);
         header.ReadGroups.Add(new_rg.ID);
+
     }
 
-    _DEBUG(1) cerr << NAME << " read group dictionary after modifying it" << endl;
-    _DEBUG(1) printReadGroupDictionary(cerr, header.ReadGroups);
+    IF_DEBUG(1) {
+        cerr << NAME << " read group dictionary after modifying it:" << endl;
+        printReadGroupDictionary(cerr, header.ReadGroups);
+    }
 
     //-------------------------------------  @PG: programs
 
@@ -404,7 +412,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
     if (! writer.Open(output_file, header, reader.GetReferenceData())) {
         cerr << NAME << " could not open output " << output_file << endl;
-        return 1 ;
+        return EXIT_FAILURE;
     }
 
 	BamAlignment al;  // holds the current read from the BAM file
@@ -416,7 +424,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
         ++n_reads;
 
-        _DEBUG(1) if (n_reads <= debug_reads_to_report) {
+        if (DEBUG(1) && n_reads <= debug_reads_to_report) {
             cerr << NAME << " " << n_reads << " read before processing: ";
             printAlignmentInfo(cerr, al);
         }
@@ -433,7 +441,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
             if (al.GetTag("RG", RG_tag) && RG_tag == replace_string) {
                 if (! al.EditTag("RG", "Z", new_rg.ID)) {
                     cerr << NAME << " could not edit tag for read " << al.Name << endl;
-                    return 1;
+                    return EXIT_FAILURE;
                 }
             }
 
@@ -443,26 +451,24 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 
         }
 
-        _DEBUG(1) if (n_reads <= debug_reads_to_report) {
+        if (DEBUG(1) && n_reads <= debug_reads_to_report) {
             cerr << NAME << " " << n_reads << " read after processing: ";
             printAlignmentInfo(cerr, al);
         }
 
         writer.SaveAlignment(al);
 
-        if (opt_progress && n_reads % opt_progress == 0)
+        if ((opt_progress || DEBUG(1)) && n_reads % opt_progress == 0)
             cerr << NAME << " " << n_reads << " reads processed..." << endl;
 	}
 
-    if (opt_progress) 
+    if (opt_progress || DEBUG(1)) 
         cerr << NAME << " " << n_reads << " reads processed" << endl;
-    else 
-        _DEBUG(1) cerr << NAME << " " << n_reads << " reads processed" << endl;
 
 	reader.Close();
 	writer.Close();
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 
@@ -516,7 +522,7 @@ yoruba::parseReadGroupDictionaryString(const string& in)
             case ':': 
                 if (prev_pos < pos) {
                     this_tag = dict.substr(prev_pos, (pos - prev_pos));
-                    _DEBUG(1) cerr << "after ':', this_tag = " << this_tag << endl;
+                    IF_DEBUG(1) cerr << "after ':', this_tag = " << this_tag << endl;
                 } else return empty_rgd;
                 prev_pos = pos + 1;
                 break;
@@ -528,7 +534,7 @@ yoruba::parseReadGroupDictionaryString(const string& in)
                 }
                 if (prev_pos < pos) {
                     this_val = dict.substr(prev_pos, (pos - prev_pos));
-                    _DEBUG(1) cerr << "after escape character, this_val = " << this_val << endl;
+                    IF_DEBUG(1) cerr << "after escape character, this_val = " << this_val << endl;
                     if (this_tag == "ID") rg.ID = this_val;
                     else if (this_tag == "LB") rg.Library = this_val;
                     else if (this_tag == "SM") rg.Sample = this_val;

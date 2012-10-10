@@ -90,7 +90,7 @@ Options: --reads-to-report INT  print this many reads [" << opt_reads_to_report 
     cerr << "Inu is the Yoruba (Nigeria) noun for 'inside'." << endl;
     cerr << endl;
 
-    return 1;
+    return EXIT_FAILURE;
 }
 
 
@@ -152,7 +152,7 @@ yoruba::main_inu(int argc, char* argv[])
 #endif
         else {
             cerr << NAME << " unprocessed argument '" << args.OptionText() << "'" << endl;
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
@@ -171,7 +171,7 @@ yoruba::main_inu(int argc, char* argv[])
 
 	if (! reader.Open(input_file)) {
         cerr << NAME << "could not open BAM input" << endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
 #ifdef _BAMTOOLS_EXTENSION
@@ -291,6 +291,6 @@ yoruba::main_inu(int argc, char* argv[])
 
 	reader.Close();
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 

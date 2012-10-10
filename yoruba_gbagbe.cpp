@@ -1,17 +1,14 @@
-// yoruba_inu.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_gbagbe.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
 //
 // Gbagbe (English command is forget) dynamically reassociates reads with reference
 // sequences in a BAM file.
 //
 // Gbagbe dynamically reassociating reads with reference sequences in a BAM
-// file.  In automatic mode, gbagbe removes reference sequences from the BAM
-// header that are not actually referred to by reads.  In directed mode, gbagbe
-// will replace the BAM header with one that is provided by the user, and
-// reassociate reads with reference sequences in the order they appear in the
-// new header.
-//
-// Inu reads the BAM file structure and summarizes the header, references and read
-// contents.  It can also check the validity of the header.
+// file, removing reference sequences from the BAM header that are not actually
+// referred to by reads.  Mates that reference sequences that the aligned reads
+// do not reference will have their reference changed to -1, unless --mate is 
+// specified, then the mates' reference sequences will be included in the output
+// BAM.
 //
 // Gbagbe is the Yoruba (Nigeria) verb for 'to forget'.
 //
@@ -23,10 +20,7 @@
 //
 //
 // TODO
-//
-// Update README.md
-// Update with options
-// Rebuild the BAM file index on option
+// xxx solve reference sequence issues
 //
 
 #include "yoruba_gbagbe.h"
@@ -37,6 +31,7 @@ using namespace yoruba;
 
 static string       input_file;  // will eventually default to stdin, set from command line
 static string       output_file;  // defaults to stdout, set with -o FILE
+static bool         opt_mate = true; // with --no-mate, forget references for mates too
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 0;
 static int64_t      opt_reads = -1;
@@ -62,7 +57,7 @@ main(int argc, char* argv[]) {
 
 
 static int
-usage()
+usage(bool longer = false)
 {
     cerr << endl;
     cerr << "Usage:   " << YORUBA_NAME << " forget [options] <in.bam>" << endl;
@@ -72,9 +67,27 @@ usage()
     cerr << endl;
     cerr << "\
 Dynamically reduces the number of reference sequences in <in.bam>.\n\
+\n";
+    if (longer) cerr << "\
+Alignments within a BAM file mention reference sequences.  The BAM header may\n\
+contain many reference sequence descriptions (@SQ lines) to which no alignments \n\
+refer.  This function removes these unmentioned reference sequence descriptions,\n\
+and can be especially helpful for reducing space and loading time when the BAM \n\
+file contains alignments extracted from a region of a larger BAM containing\n\
+alignments against many, many reference sequences.  If the original BAM file \n\
+mentioned a few hundred references, it is probably not much of a problem. \n\
+10 million reference descriptions, on the other hand, take a while to load... \n\
 \n\
-Options: --o FILE | -o FILE | --output FILE  output file name [default is stdout]\n\
-         --? | -? | --help      longer help\n\
+Each paired-end read with an aligned mate mentions the reference sequence of\n\
+its mate.  These reference sequence descriptions will also be kept in the\n\
+output BAM file unless the --no-mate option is given.  With this option, such\n\
+mates will have their reference sequence ID set to -1, which indicates a missing \n\
+reference sequence description.\n\
+\n";
+    cerr << "\
+Options: --no-mate                             also forget references for paired-end mates\n\
+         --o FILE | -o FILE | --output FILE    output file name [default is stdout]\n\
+         --? | -? | --help                     longer help\n\
 \n";
 #ifdef _WITH_DEBUG
     cerr << "\
@@ -86,7 +99,7 @@ Options: --o FILE | -o FILE | --output FILE  output file name [default is stdout
     cerr << "Gbagbe is the Yoruba (Nigeria) verb for 'to forget'." << endl;
     cerr << endl;
 
-    return 1;
+    return EXIT_FAILURE;
 }
 
 
@@ -96,7 +109,6 @@ Options: --o FILE | -o FILE | --output FILE  output file name [default is stdout
 int 
 yoruba::main_gbagbe(int argc, char* argv[])
 {
-    SamHeader new_header;  // the new header we are creating
     SamProgram new_program;
 
     new_program.ID = YORUBA_NAME;
@@ -113,13 +125,15 @@ yoruba::main_gbagbe(int argc, char* argv[])
 		return usage();
 	}
     
-    enum { OPT_output,
+    enum { OPT_output, OPT_nomate, OPT_mate,
 #ifdef _WITH_DEBUG
         OPT_debug, OPT_reads, OPT_progress,
 #endif
         OPT_help };
 
     CSimpleOpt::SOption gbagbe_options[] = {
+        { OPT_nomate,          "--no-mate",         SO_NONE }, 
+        //{ OPT_mate,            "--mate",            SO_NONE }, 
         { OPT_help,            "--?",               SO_NONE }, 
         { OPT_help,            "-?",                SO_NONE }, 
         { OPT_help,            "--help",            SO_NONE },
@@ -142,7 +156,11 @@ yoruba::main_gbagbe(int argc, char* argv[])
             return usage();
         }
         if (args.OptionId() == OPT_help) {
-            return usage();
+            return usage(true);
+        //} else if (args.OptionId() == OPT_mate) {
+        //    opt_mate = true;
+        } else if (args.OptionId() == OPT_nomate) {
+            opt_mate = false;
         } else if (args.OptionId() == OPT_output) {
             output_file = args.OptionArg();
 #ifdef _WITH_DEBUG
@@ -155,7 +173,7 @@ yoruba::main_gbagbe(int argc, char* argv[])
 #endif  // end debug options
         } else {
             cerr << NAME << " unprocessed argument '" << args.OptionText() << "'" << endl;
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
@@ -166,7 +184,7 @@ yoruba::main_gbagbe(int argc, char* argv[])
         input_file = args.File(0);
     } else if (input_file.empty()) {
         cerr << NAME << " can't currently read from stdin, ask Doug about it" << endl;
-        return 1;
+        return EXIT_FAILURE;
         input_file = "/dev/stdin";
     }
 
@@ -203,13 +221,13 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
 	if (! reader.Open(input_file)) {
         cerr << NAME << "could not open BAM input" << endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (reader.GetReferenceCount() == 0) {
         cerr << NAME << "no reference sequences found in BAM header" << endl;
         reader.Close();
-        return 1;
+        return EXIT_FAILURE;
     }
 
 #ifdef _BAMTOOLS_EXTENSION
@@ -217,6 +235,8 @@ yoruba::main_gbagbe(int argc, char* argv[])
 #else
     SamHeader header = reader.GetHeader();
 #endif
+
+    SamHeader new_header;  // the new header we are creating
 
     //----------------- Header metadata
 
@@ -246,15 +266,16 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
     new_header.Comments = header.Comments;
 
+
     //----------------- Pass 1: Determine which references are used
 
-    if (opt_progress)
+
+    if (opt_progress || DEBUG(1))
         cerr << NAME << "[pass1] " << reader.GetReferenceCount() 
-            << " references in the old BAM" << endl;
-    else
-        _DEBUG(1) cerr << NAME << "[pass1] " << reader.GetReferenceCount() 
-            << " references in the old BAM" << endl;
+            << " references in the input BAM" << endl;
+
     vector<int64_t> refs_used( reader.GetReferenceCount() );
+
     int64_t n_reads = 0;  // number of reads processed
 	BamAlignment al;  // holds the current read from the BAM file
 
@@ -262,58 +283,102 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
         ++n_reads;
         if (al.IsMapped()) {
-            assert(al.RefID >= 0);
+            if (al.RefID < 0) {
+                cerr << NAME << "[pass1] missing reference sequence from input bam" << endl;
+                return EXIT_FAILURE;
+            }
             ++refs_used[al.RefID];
         }
-        if (opt_progress && n_reads % opt_progress == 0)
+        if (opt_mate && al.IsPaired() && al.IsMateMapped() && al.MateRefID >= 0)
+            // if a reference is missing for a mapped mate then MateRefID == -1,
+            // an unmapped mate has our RefID and Position, so not a reference "use"
+            ++refs_used[al.MateRefID];
+
+        if ((opt_progress || DEBUG(1)) && n_reads % opt_progress == 0)
             cerr << NAME << "[pass1] " << n_reads << " reads examined..." << endl;
  
 	}
-    if (opt_progress)
+    if (opt_progress || DEBUG(1))
         cerr << NAME << "[pass1] " << n_reads << " reads examined" << endl;
-    else
-        _DEBUG(1) cerr << NAME << "[pass1] " << n_reads << " reads examined" << endl;
 
-    //----------------- Pass 2: create new reference set
+
+    //----------------- Pass 2: Create new reference set
+
 
     const RefVector& old_refs = reader.GetReferenceData();
     RefVector        new_refs;
+    RefVector        blank_refs;
 
     assert(new_header.Sequences.IsEmpty());  // new_refs contains the new @SQ info
     int32_t new_RefID = 0;
     for (size_t i = 0; i < refs_used.size(); ++i) {
+
         if (refs_used[i] > 0) {
             new_refs.push_back(old_refs[i]);
-            // new_header.Sequences.Add(old_refs[i].RefName, old_refs[i].RefLength + 100000);
-            //new_header.Sequences.Add(old_refs[i].RefName, 100000);
-            refs_used[i] = new_RefID++;  // entry now contains new reference ID
-        } else refs_used[i] = -1;
+#ifdef _BAMTOOLS_EXTENSION
+            SamSequenceConstIterator refI = header.Sequences.ConstFind(old_refs[i].RefName);
+            if (refI == header.Sequences.ConstEnd()) {
+                cerr << NAME << "[pass2] internal header inconsistency, " << old_refs[i].RefName 
+                    << " not found in the input header" << endl;
+                return EXIT_FAILURE;
+            }
+            const SamSequence& existing_ref = (*refI);
+#else
+            const SamSequence& existing_ref = header.Sequences[old_refs[i].RefName];
+#endif
+            new_header.Sequences.Add(existing_ref);
+            refs_used[i] = new_RefID;  // entry now contains new reference ID
+            ++new_RefID;
+
+        } else {
+            refs_used[i] = -1;
+        }
     }
     assert(new_refs.size() == (size_t)new_RefID);
-    //assert(! new_header.Sequences.IsEmpty());  // new_refs contains the new @SQ info
-    if (opt_progress)
-        cerr << NAME << "[pass2] " << new_RefID << " references in the new BAM" << endl;
-    else
-        _DEBUG(1) cerr << NAME << "[pass2] " << new_RefID << " references in the new BAM" << endl;
-    _DEBUG(1) {
+
+    if (opt_progress || DEBUG(1))
+        cerr << NAME << "[pass2] " << new_RefID << " reference"
+            << (new_RefID == 1 ? "" : "s") << " in the output BAM" << endl;
+
+    IF_DEBUG(1) {
         for (size_t i = 0; i < new_refs.size(); ++i) {
-            cerr << NAME << "[pass2] " << i << " new_refs RefName='" << new_refs[i].RefName
-                << "' RefLength=" << new_refs[i].RefLength << endl;
+            cerr << NAME << "[pass2] " << i << "] SN:" << new_refs[i].RefName
+                << "  LN:" << new_refs[i].RefLength << endl;
         }
-        for (SamSequenceConstIterator sscI = header.Sequences.ConstBegin(); 
-                sscI != header.Sequences.ConstEnd(); ++sscI) {
-            cerr << NAME << "[pass2] " << " Sequences RefName='" << sscI->Name
-                << "' RefLength=" << sscI->Length << endl;
+        IF_DEBUG(2) {
+            SamSequenceConstIterator sscI = new_header.Sequences.ConstBegin();
+            if (sscI == new_header.Sequences.ConstEnd()) {
+                cerr << NAME "[pass2] no entries in new_header.Sequences" << endl;
+            } else {
+                for (; sscI != new_header.Sequences.ConstEnd(); ++sscI)
+                    cerr << NAME << "[pass2] new_header " << " Sequences RefName=" << sscI->Name
+                        << "  RefLength=" << sscI->Length << endl;
+            }
         }
     }
 
-    //----------------- Pass 2: second pass through reads, write new BAM file
+
+    //----------------- Pass 2: Second pass through reads, write new BAM file
+
 
     BamWriter writer;
 
+    IF_DEBUG(2) {
+        cerr << "********* BEGIN new_header.ToString()" << endl;
+        cerr << new_header.ToString();
+        cerr << "********* END   new_header.ToString()" << endl;
+    }
+
+
     if (! writer.Open(output_file, new_header, new_refs)) {
+    //if (! writer.Open(output_file, new_header, blank_refs)) {
         cerr << NAME << " could not open output " << output_file << endl;
-        return 1 ;
+        return EXIT_FAILURE;
+    }
+    if (false) {
+        reader.Close();
+        writer.Close();
+        return EXIT_FAILURE;
     }
 
     int64_t n_reads_pass1 = n_reads;
@@ -330,6 +395,16 @@ yoruba::main_gbagbe(int argc, char* argv[])
             assert(al.RefID >= 0);  // it was valid before...
             if (al.RefID != refs_used[al.RefID]) {  // the reference ID is different
                 ++n_reads_rerefd;
+                if (al.IsPaired()) {
+                    if (al.MateRefID == al.RefID
+                        || (opt_mate && al.MateRefID >= 0)) {
+                        // update the mate RefID
+                        al.MateRefID = refs_used[al.MateRefID];
+                    } else if (al.IsMateMapped()) {
+                        // mate ref is now unavailable
+                        al.MateRefID = -1;
+                    }
+                }
                 al.RefID = refs_used[al.RefID];
                 assert(al.RefID >= 0);  // and it is valid after
             }
@@ -338,19 +413,14 @@ yoruba::main_gbagbe(int argc, char* argv[])
         writer.SaveAlignment(al);
 
         if (opt_progress && n_reads % opt_progress == 0)
-            cerr << NAME << "[pass2] " << n_reads << " reads processed, " 
-                << n_reads_rerefd << " rereferenced" << endl;
+            cerr << NAME << "[pass2] " << n_reads << " reads examined, " 
+                << n_reads_rerefd << " rereferenced in the output BAM" << endl;
  
 	}
-    if (opt_progress)
-        cerr << NAME << "[pass2] " << n_reads << " reads examined from the BAM file" << endl;
-    else
-        _DEBUG(1) cerr << NAME << "[pass2] " << n_reads << " reads examined from the BAM file" << endl;
+    if (opt_progress || DEBUG(1))
+        cerr << NAME << "[pass2] " << n_reads << " reads examined, " 
+            << n_reads_rerefd << " reads rereferenced in the output BAM" << endl;
     assert(n_reads == n_reads_pass1);
-    if (opt_progress)
-        cerr << NAME << "[pass2] " << n_reads_rerefd << " reads rereferenced" << endl;
-    else 
-        _DEBUG(1) cerr << NAME << "[pass2] " << n_reads_rerefd << " reads rereferenced" << endl;
 
 	reader.Close();
 	writer.Close();

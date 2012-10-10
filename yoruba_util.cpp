@@ -10,6 +10,75 @@ using namespace yoruba;
 //-------------------------------------
 
 
+bool
+yoruba::isCoordinateSorted(int32_t ref, int32_t pos, int32_t prev_ref, int32_t prev_pos)
+{
+    if (ref < prev_ref || (ref == prev_ref && pos < prev_pos))
+        return false;
+    return true;
+}
+
+
+//-------------------------------------
+
+
+bool
+yoruba::isMateUpstream(const BamAlignment& alignment)
+{
+    // assumes coordinate-sorted
+    if (! alignment.IsPaired() || ! alignment.IsMateMapped()) {
+        return false;
+    } else if (alignment.RefID < alignment.MateRefID) {
+        return false;
+    } else if (alignment.RefID == alignment.MateRefID) {
+        if (alignment.InsertSize > 0) {
+            return false;
+        } else if (alignment.InsertSize == 0) {
+            cerr << "yoruba::isMateUpstream(): InsertSize == 0, strangely..." << endl;
+            return false;
+        } else if (alignment.InsertSize < 0) {
+            return true;
+        }
+    } else if (alignment.RefID > alignment.MateRefID) {
+        return true;
+    }
+    cerr << "yoruba::isMateUpstream(): unhandled case, strangely..." << endl;
+    return false;
+}
+
+
+//-------------------------------------
+
+
+bool
+yoruba::isMateDownstream(const BamAlignment& alignment)
+{
+    // assumes coordinate-sorted
+    if (! alignment.IsPaired() || ! alignment.IsMateMapped()) {
+        return false;
+    } else if (alignment.RefID < alignment.MateRefID) {
+        return true;
+    } else if (alignment.RefID == alignment.MateRefID) {
+        if (alignment.InsertSize > 0) {
+            return true;
+        } else if (alignment.InsertSize == 0) {
+            cerr << "yoruba::isMateDownstream(): InsertSize == 0, strangely..." << endl;
+            return false;
+        } else if (alignment.InsertSize < 0) {
+            return false;
+        }
+    } else if (alignment.RefID > alignment.MateRefID) {
+        return false;
+    }
+    cerr << "yoruba::isMateDownstream(): unhandled case, strangely..." << endl;
+    return false;
+}
+
+
+//-------------------------------------
+
+
+// overloaded
 void
 yoruba::PrintAlignment(const BamAlignment& alignment)
 {
@@ -17,6 +86,10 @@ yoruba::PrintAlignment(const BamAlignment& alignment)
 }
 
 
+//-------------------------------------
+
+
+// overloaded
 void
 yoruba::PrintAlignment(ostream& os,
                        const BamAlignment& alignment)
@@ -96,6 +169,7 @@ yoruba::printReadGroup(ostream& os,
 //-------------------------------------
 
 
+// overloaded
 void
 yoruba::printAlignmentInfo(std::ostream& os,
                            const BamAlignment& al,
@@ -109,6 +183,7 @@ yoruba::printAlignmentInfo(std::ostream& os,
 //-------------------------------------
 
 
+// overloaded
 void
 yoruba::printAlignmentInfo(std::ostream& os,
                            const BamAlignment& al,
@@ -116,38 +191,41 @@ yoruba::printAlignmentInfo(std::ostream& os,
                            int32_t level)
 {
     os << al.Name;
+    if (al.IsDuplicate()) os << "\tDuplicate";
     if (level > 1)
-        os << "\tprim=" << al.IsPrimaryAlignment();
-    os << "\tmap=" << al.IsMapped();
-    os << "\trefid=" << al.RefID;
-    if (al.IsMapped() && ! refs.empty()) {
+        if (al.IsPrimaryAlignment()) os << "\tPrimary";
+    os << (al.IsMapped() ? "\tMapped" : "\tUnmapped");
+    os << "\tRefID=" << al.RefID;
+    if (al.IsMapped() && al.RefID >= 0 && ! refs.empty()) {
         os << "[" << refs[al.RefID].RefName << ",l=" << refs[al.RefID].RefLength << "]";
     }
-    os << "\tpos=" << al.Position;
-    os << "\tmapq=" << al.MapQuality;
-    os << "\trev=" << al.IsReverseStrand();
+    os << ":Pos=" << al.Position;
+    os << "\tmapQ=" << al.MapQuality;
+    os << (al.IsReverseStrand() ?  "\tRev" : "\tForw");
     if (level > 0)
-        os << "\tq,a=" << al.QueryBases.length() << "," << al.AlignedBases.length();
-    os << "\tpair=" << al.IsPaired();
+        os << "\tQ,A=" << al.QueryBases.length() << "," << al.AlignedBases.length();
+    os << "\tPair=" << al.IsPaired();
     if (al.IsPaired() && level > 1) {
         os << " |";
-        os << "\tm_map=" << al.IsMateMapped();
-        os << "\tm_refid=" << al.MateRefID;
-        if (al.IsMateMapped() && ! refs.empty()) {
+        os << (al.IsMateMapped() ? "\tmMapped" : "\tmUnmapped");
+        os << "\tmRefID=" << al.MateRefID;
+        if (al.IsMateMapped() && al.MateRefID >= 0 && ! refs.empty()) {
             os << "[" << refs[al.MateRefID].RefName << ",l=" << refs[al.MateRefID].RefLength << "]";
         }
-        os << "\tm_pos=" << al.MatePosition;
-        os << "\tm_rev=" << al.IsMateReverseStrand();
+        os << ":mPos=" << al.MatePosition;
+        os << (al.IsMateReverseStrand() ?  "\tmRev" : "\tmForw");
     }
-    if (al.IsPaired() && level > 2)
-        os  << "\tprop=" << al.IsProperPair();
-        os << "\tm_1=" << al.IsFirstMate();
-        os << "\tm_2=" << al.IsSecondMate();
-        os << "\tisz=" << al.InsertSize;
+    if (al.IsPaired() && level > 2) {
+        os << "\t";
+        if (al.IsProperPair()) os << "PropPair,";
+        if (al.IsFirstMate()) os << "1stMate";
+        if (al.IsSecondMate()) os << "2ndMate";
+        os << "\tISize=" << al.InsertSize;
+    }
     // tags
     string tag;
     if (al.GetTag("RG", tag))
-        os << "\tRG:Z:'" << tag << "'";
+        os << "\tRG:Z:" << tag;
     os << endl;
 }
 
@@ -155,6 +233,7 @@ yoruba::printAlignmentInfo(std::ostream& os,
 //-------------------------------------
 
 
+// overloaded
 void
 yoruba::printAlignmentInfo_fields(std::ostream& os,
                                   const BamAlignment& al,
@@ -168,47 +247,52 @@ yoruba::printAlignmentInfo_fields(std::ostream& os,
 //-------------------------------------
 
 
+// overloaded
 void
 yoruba::printAlignmentInfo_fields(std::ostream& os,
                                   const BamAlignment& al,
                                   const RefVector& refs,
                                   int32_t level) {
     os << setw(35) << left << al.Name << right;
+    if (al.IsDuplicate()) os << " Dup";
     if (level > 1)
-        os << " prim " << al.IsPrimaryAlignment();
-    if (level > 0)
-        os << " map " << al.IsMapped();
+        if (al.IsPrimaryAlignment()) os << " Prim";
+    os << (al.IsMapped() ? " Map" : " Unmap");
     os << " |";
-    os << " refid " << setw(8) << al.RefID;
-    if (al.IsMapped() && ! refs.empty())
+    os << " RefID " << setw(8) << al.RefID;
+    if (al.IsMapped() && al.RefID >= 0 && ! refs.empty()) {
         os << " [" << setw(15) << refs[al.RefID].RefName << "," << 
             setw(5) << refs[al.RefID].RefLength << "]";
-    os << " pos " << setw(8) << al.Position;
-    os << " mapq " << al.MapQuality;
-    os << " rev " << al.IsReverseStrand();
+    }
+    os << " Pos " << setw(8) << al.Position;
+    os << " mapQ " << al.MapQuality;
+    os << (al.IsReverseStrand() ? " Rev" : " Forw");
     if (level > 0)
-        os << " q,a " << setw(3) << al.QueryBases.length() << "," << 
+        os << " Q,A " << setw(3) << al.QueryBases.length() << "," << 
             setw(3) << al.AlignedBases.length();
-    os << " pair " << al.IsPaired();
+    os << " Pair" << al.IsPaired();
     if (al.IsPaired() && level > 1) {
         os << " |";
-        os << " map " << al.IsMateMapped();
-        os << " MATE refid " << setw(8) << al.MateRefID;
-        os << " pos " << setw(8) << al.MatePosition;
-        os << " rev " << al.IsMateReverseStrand();
+        os << (al.IsMateMapped() ? " Map" : " Unmap");
+        os << " mRefID " << setw(8) << al.MateRefID;
+        if (al.IsMateMapped() && al.MateRefID >= 0 && ! refs.empty()) {
+            os << "[" << refs[al.MateRefID].RefName << ",l=" << refs[al.MateRefID].RefLength << "]";
+        }
+        os << " mPos " << setw(8) << al.MatePosition;
+        os << (al.IsMateReverseStrand() ? " mRev" : " mForw");
     }
     if (al.IsPaired() && level > 2) {
-        os << " |";
-        os << " proppair " << al.IsProperPair();
-        os << " mat1st " << al.IsFirstMate();
-        os << " mat2nd " << al.IsSecondMate();
-        os << " isize " << al.InsertSize;
+        os << " | ";
+        if (al.IsProperPair()) os << "PropPair,";
+        if (al.IsFirstMate()) os << "Mate1," << al.IsFirstMate();
+        if (al.IsSecondMate()) os << "Mate2" << al.IsSecondMate();
+        os << " ISz " << al.InsertSize;
     }
     // tags
     os << " | tags";
     string tag;
     if (al.GetTag("RG", tag))
-        os << " RG:Z:'" << tag << "'";
+        os << " RG:Z:" << tag;
     os << endl;
 }
 

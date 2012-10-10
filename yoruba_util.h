@@ -22,12 +22,25 @@
 #include "ibejiAlignment.h"
 
 #ifdef _WITH_DEBUG
+#define IF_DEBUG(__lvl__) if (opt_debug >= __lvl__)
 #define _DEBUG(__lvl__) if (opt_debug >= __lvl__)
+#define DEBUG(__lvl__) (opt_debug >= __lvl__)
 #else
+#define IF_DEBUG(__lvl__) if (0)
 #define _DEBUG(__lvl__) if (0)
+#define DEBUG(__lvl__) (false)
 #endif
 
 namespace yoruba {
+
+bool 
+isCoordinateSorted(int32_t ref, int32_t pos, int32_t prev_ref, int32_t prev_pos);
+
+bool 
+isMateUpstream(const BamTools::BamAlignment&);
+
+bool 
+isMateDownstream(const BamTools::BamAlignment&);
 
 void 
 PrintAlignment(const BamTools::BamAlignment&);

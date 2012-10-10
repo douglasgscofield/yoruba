@@ -176,7 +176,7 @@ main(int argc, char* argv[]) {
 	// validate argument count
 	if( argc != 2 ) {
 		cerr << "USAGE: " << argv[0] << " <input BAM file> " << endl;
-		exit(1);
+		return EXIT_FAILURE;
 	}
 
 	string filename = argv[1];
@@ -184,8 +184,8 @@ main(int argc, char* argv[]) {
 	
 	BamReader reader;
 	if (!reader.Open(filename)) {
-        cerr << "could not open filename " << filename << ", exiting" << endl;
-        return 1;
+        cerr << "could not open filename " << filename << endl;
+        return EXIT_FAILURE;
     }
     cerr << filename << ": Done opening" << endl;
 
@@ -210,7 +210,7 @@ main(int argc, char* argv[]) {
     if (! output_bam_filename.empty()) {
         if (! writer.Open(output_bam_filename, header, refs)) {
             cerr << "Could not open BAM output file " << output_bam_filename << endl;
-            exit(1);
+            return EXIT_FAILURE;
         }
         cerr << filename << ": Done opening BAM output file " << output_bam_filename << endl;
     }
@@ -264,16 +264,9 @@ main(int argc, char* argv[]) {
             }
             last_RefID = al.RefID;
             last_Position = al.Position;
-        } else if (al.RefID < last_RefID) {
-            cerr << filename << " does not appear to be sorted, chromosome out of order: "
-                 << last_RefID << " (" << refs[last_RefID].RefName << ") "
-                 << al.RefID << " (" << refs[al.RefID].RefName << ") " << endl;
-            exit(1);
-        } else if (al.Position < last_Position) {
-            cerr << filename << " does not appear to be sorted, reads out of order: "
-                 << last_Position << " (last read) "
-                 << al.Position << " (" << al.Name << ")" << endl;
-            exit(1);
+        } else if (! isCoordinateSorted(al.RefID, al.Position, last_RefID, last_Position)) {
+            cerr << filename << " is not sorted, " << al.Name << " out of position" << endl;
+            return EXIT_FAILURE;
         }
 
         if (! al.IsMapped()) { ++n_reads_skipped_unmapped; continue; }
@@ -332,7 +325,7 @@ main(int argc, char* argv[]) {
                 stringMapI rmI = ref_mates.find(al.Name);
                 if (rmI == ref_mates.end()) {
                     cerr << "expected a ref_mate, couldn't find its name: " << al.Name << endl;
-                    exit(1);
+                    return EXIT_FAILURE;
                 }
                 ref_mates.erase(rmI);
             }
@@ -358,6 +351,6 @@ main(int argc, char* argv[]) {
     if (! output_bam_filename.empty()) {
 	    writer.Close();
     }
-	return 0;
+	return EXIT_SUCCESS;
 }
 
