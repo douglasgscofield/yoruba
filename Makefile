@@ -27,14 +27,18 @@ HEAD=		$(HEAD_COMM) \
 			yoruba_kojopodipo.h \
 			yoruba_seda.h
 
+
 #---------------------------  Main program
+
 
 all: $(PROG)
 
 yoruba: bamtools-headers $(OBJS) bamtools-static-library
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -L$(BAMTOOLS_LIB_DIR) $(LIBS)
 
+
 #---------------------------  Individual object files
+
 
 # SimpeOpt.h is from http://code.jellycan.com/simpleopt and processes command-line args
 
@@ -50,13 +54,16 @@ yoruba_inu.o: yoruba_inu.h
 
 yoruba_kojopodipo.o: yoruba_kojopodipo.h 
 
+# seda (mark/remove duplicates) is not yet read for alpha
 yoruba_seda.o: yoruba_seda.h 
 
 yoruba_util.o: yoruba_util.h
 
 yoruba_ibeji.o: ibejiAlignment.h processReadPair.h 
 
+
 #---------------------------  Other targets
+
 
 bamtools-headers:
 	( cd $(BAMTOOLS_BUILD_DIR) ; make SharedHeaders )
@@ -65,13 +72,17 @@ bamtools-headers:
 bamtools-static-library:
 	( cd $(BAMTOOLS_BUILD_DIR) ; make BamTools-static/fast )
 
+bamtools-clean:
+	( cd $(BAMTOOLS_BUILD_DIR) ; make clean )
+
 clean:
 	rm -f gmon.out *.o $(PROG)
 
-clean-all: clean
-	( cd $(BAMTOOLS_BUILD_DIR) ; make clean )
+clean-all: clean bamtools-clean
+
 
 #---------------------------  Obsolete and/or waiting for cleanup/reuse
+
 
 sefibo.o: ibejiAlignment.h yoruba_util.h SimpleOpt.h
 
