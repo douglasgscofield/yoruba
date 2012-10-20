@@ -31,8 +31,7 @@ HEAD=		$(HEAD_COMM) \
 
 all: $(PROG)
 
-yoruba: $(OBJS)
-	( cd $(BAMTOOLS_BUILD_DIR) ; make BamTools-static/fast )
+yoruba: bamtools-headers $(OBJS) bamtools-static-library
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -L$(BAMTOOLS_LIB_DIR) $(LIBS)
 
 #---------------------------  Individual object files
@@ -58,6 +57,13 @@ yoruba_util.o: yoruba_util.h
 yoruba_ibeji.o: ibejiAlignment.h processReadPair.h 
 
 #---------------------------  Other targets
+
+bamtools-headers:
+	( cd $(BAMTOOLS_BUILD_DIR) ; make SharedHeaders )
+	( cd $(BAMTOOLS_BUILD_DIR) ; make APIHeaders )
+
+bamtools-static-library:
+	( cd $(BAMTOOLS_BUILD_DIR) ; make BamTools-static/fast )
 
 clean:
 	rm -f gmon.out *.o $(PROG)

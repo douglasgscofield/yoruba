@@ -377,14 +377,14 @@ yoruba::main_kojopodipo(int argc, char* argv[])
                 header.ReadGroups[replace_string].ID = new_rg.ID;
             }
         } else {
-            header.ReadGroups.Add(new_rg.ID);
+            header.ReadGroups.Add(new_rg);
         }
 
     }  else {
 
         if (header.ReadGroups.Contains(new_rg.ID))
             header.ReadGroups.Remove(new_rg.ID);
-        header.ReadGroups.Add(new_rg.ID);
+        header.ReadGroups.Add(new_rg);
 
     }
 
