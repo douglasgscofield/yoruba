@@ -209,8 +209,8 @@ options on the read group dictionary and the RG tag on reads:
 <tr>
   <th bgcolor="#e4e4f0"></th>
   <th bgcolor="#eeeefa">no RG</th>
-  <th bgcolor="#eeeefa">RG matches <code><I>STR</I></code></th>
-  <th bgcolor="#eeeefa">RG does not match <code><I>STR</I></code></th>
+  <th bgcolor="#eeeefa">RG matches <I>STR</I></th>
+  <th bgcolor="#eeeefa">RG does not match <I>STR</I></th>
   <th bgcolor="#e4e4f0"></th>
 </tr>
 </thead>
@@ -221,11 +221,11 @@ options on the read group dictionary and the RG tag on reads:
   <td align="center">RG added</td>
 </tr>
 <tr>
-  <td><code>--replace <I>STR</I></code></td>
+  <td><code>--replace</code> <I>STR</I></td>
   <td align="center">no change</td>
   <td align="center">RG changed to <code>--ID</code></td>
   <td align="center">no change</td>
-  <td align="center">RG <code><I>STR</I></code> updated with <code>--ID</code>; replaced if any other RG options</td>
+  <td align="center">RG <I>STR</I> updated with <code>--ID</code>; replaced if any other RG options</td>
 </tr>
 <tr>
   <td><code>--clear</code>, no <code>--ID</code></td>

@@ -74,6 +74,8 @@ usage()
 Determines duplicate reads in a BAM file, marks them as duplicates, and removes\n\
 them on option.\n\
 \n\
+NOTE: THIS COMMAND IS INCOMPLETE, DO NOT USE\n\
+\n\
 Options: --as-single-end                     all reads treated as single-end, ignore pairing\n\
          --single-end-only                   only look for duplicates in single-end reads\n\
          --paired-end-only                   only look for duplicates in paired-end reads\n\
