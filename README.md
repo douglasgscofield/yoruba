@@ -1,3 +1,4 @@
+
 yoruba
 ======
 
@@ -9,14 +10,17 @@ command-option interface reminiscent of
 
 where `<command>` is one of several specific commands.
 
-`forget`
+`forget` or `gbagbe`
 : Forget unused reference sequences in a BAM file
 
-`inside`
+`inside` or `inu`
 : Summarize BAM file contents
 
-`readgroup`
+`readgroup` or `kojopodipo`
 : Add or replace read group information
+
+`duplicate` or `seda`
+: Mark and remove duplicate paired-end and single-end reads
 
 Yoruba uses the [BamTools][] C++ API for handling BAM files and [SimpleOpt][]
 for handling command-line options.
@@ -29,6 +33,7 @@ would like to use [yoruba][] and I'll help get you started.
 [SimpleOpt]: http://code.jellycan.com/simpleopt
 
 
+
 forget
 ------
 
@@ -37,33 +42,32 @@ forget
 
 Dynamically reduces the number of reference sequences in a BAM file.  *Gbagbe*
 is the Yoruba (Nigeria) verb for 'to forget'.  Either command invokes this
-function.  If `<in.bam>` is not supplied, input is read from `stdin`.  At most
-one input BAM file is allowed.  No changes to the BAM file are caused by use of
-this command.
+function.  At most one input BAM file is allowed.
 
-`yoruba gbagbe` will remove reference sequences from the BAM header that have
-no reads mapped to them.  This can be particularly helpful when a BAM
-containing a subset of reads is created from a larger BAM containing a large
-set of reference sequences.  With e.g., `samtools`, the subset BAM will still
-contain the complete set of reference sequence names in the header of the
-original BAM.  This can be very wasteful of space if many reference sequences
-appeared in that file, and increases the time required for downstream tools to
-read the BAM.  `yoruba gbagbe` makes two passes over the BAM file, the first to
-determine which reference sequences are mapped to, and the second to write the
-new BAM.
+`yoruba gbagbe` will remove reference sequence descriptions from the BAM header
+(@SQ lines) that are not mentioned by alignments in the BAM file.  This can be
+particularly helpful when a BAM containing a subset of reads from a larger BAM
+containing alignments mapped to a large set of reference sequences.  This can
+be wasteful of space and loading time if many reference sequence descriptions
+appeared in the original BAM header.  For a few hundred reference sequences,
+this may not be a problem, but 10 million reference sequence descriptions can
+take a while to load...
 
-Only the `@SQ` lines of the header are modified; all other sections of the
-header are left alone, except `yoruba forget` is added to the program chain
-(`@PG`).
+`yoruba gbagbe` makes two passes over the BAM file, the first to determine
+which reference sequences are mentioned, and the second to write the output
+BAM.
 
-It would be very useful to read the BAM file from stdin, to be able to include
-this in a pipe.  That requires writing the reads on stdin to a temp file until
-the last read has been read, then processing the header, writing it to stdout
-along with the reads from the temp file.  This will be added in the future.
+For paired-end reads with an aligned mate, the reference sequence of the
+aligned mate is mentioned in the BAM record for the read.  By default, `yoruba
+forget` will keep descriptions of reference sequences mentioned for mates.
+With the `--no-mate` option, these references mentioned only for mates will be
+forgotten, and the reference sequence ID for the mate will be changed to `-1`,
+indicating a missing reference sequence description.
 
 
 | Option                                     | Description |
 |--------------------------------------------|-------------|
+| `--no-mate`                                | forget references for mates of aligned reads |
 | `--o FILE` or `-o FILE` or `--output FILE` | output file name [default is stdout] |
 | `--?` or `-?` or `--help`                  | longer help |
 | `--progress INT`                           | print reads processed mod `INT` [100000] |

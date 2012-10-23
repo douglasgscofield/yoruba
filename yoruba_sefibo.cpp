@@ -159,7 +159,7 @@ is calculates as follows: \n\
     cerr << endl;
     }
 
-    return 1;
+    return EXIT_FAILURE;
 }
 
 
@@ -180,7 +180,7 @@ yoruba::main_sefibo(int argc, char* argv[]) {
 	BamReader reader;
 	if (!reader.Open(filename)) {
         cerr << "could not open filename " << filename << ", exiting" << endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Header can't be used to accurately determine sort order because samtools never
@@ -343,6 +343,6 @@ yoruba::main_sefibo(int argc, char* argv[]) {
     if (! output_bam_filename.empty()) {
 	    writer.Close();
     }
-	return 0;
+	return EXIT_SUCCESS;
 }
 

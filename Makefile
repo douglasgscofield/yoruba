@@ -1,55 +1,95 @@
 BAMTOOLS_ROOT = ../bamtools
+BAMTOOLS_BUILD_DIR = $(BAMTOOLS_ROOT)/build
 BAMTOOLS_INCLUDE_DIR = $(BAMTOOLS_ROOT)/include
 BAMTOOLS_LIB_DIR = $(BAMTOOLS_ROOT)/lib
 
 CXX=		g++
-# CXXFLAGS=	-Wall -O3
-# CXXFLAGS=	-Wall -g -D_WITH_DEBUG -D_STANDALONE -I$(BAMTOOLS_INCLUDE_DIR)
-# CXXFLAGS=	-Wall --pedantic-errors -g -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -I$(BAMTOOLS_INCLUDE_DIR)
-CXXFLAGS=	-Wall -g -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -I$(BAMTOOLS_INCLUDE_DIR)
+CXXFLAGS=	-Wall -pg -g -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -I$(BAMTOOLS_INCLUDE_DIR)
+#CXXFLAGS=	-Wall -g -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -I$(BAMTOOLS_INCLUDE_DIR)
+
 PROG=		yoruba
+
 LIBS=		-lbamtools -lz
+
+OBJS=		yoruba.o \
+			yoruba_gbagbe.o \
+			yoruba_inu.o \
+			yoruba_kojopodipo.o \
+			yoruba_seda.o \
+			yoruba_util.o
+
+HEAD_COMM=  yoruba_util.h SimpleOpt.h
+
+HEAD=		$(HEAD_COMM) \
+			yoruba.h \
+			yoruba_gbagbe.h \
+			yoruba_inu.h \
+			yoruba_kojopodipo.h \
+			yoruba_seda.h
+
+
+#---------------------------  Main program
+
 
 all: $(PROG)
 
-yoruba: yoruba.o yoruba_gbagbe.o yoruba_inu.o yoruba_kojopodipo.o yoruba_util.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ -L$(BAMTOOLS_LIB_DIR) $(LIBS)
+yoruba: bamtools-headers $(OBJS) bamtools-static-library
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -L$(BAMTOOLS_LIB_DIR) $(LIBS)
 
-yoruba.o: yoruba.h yoruba_kojopodipo.h
 
-ibejiAlignment.o: ibejiAlignment.h
+#---------------------------  Individual object files
 
-processReadPair.o: processReadPair.h util.h
 
 # SimpeOpt.h is from http://code.jellycan.com/simpleopt and processes command-line args
 
-yoruba_ibeji.o: ibejiAlignment.h processReadPair.h util.h SimpleOpt.h
+# rebuild everything if the common headers change
+$(OBJS): $(HEAD_COMM)
 
-yoruba_gbagbe.o: yoruba_gbagbe.h yoruba_util.h SimpleOpt.h
+# rebuild the main file if any header changes
+yoruba.o: $(HEAD)
 
-yoruba_inu.o: yoruba_inu.h yoruba_util.h SimpleOpt.h
+yoruba_gbagbe.o: yoruba_gbagbe.h 
 
-yoruba_kojopodipo.o: yoruba_kojopodipo.h yoruba_util.h SimpleOpt.h
+yoruba_inu.o: yoruba_inu.h 
+
+yoruba_kojopodipo.o: yoruba_kojopodipo.h 
+
+# seda (mark/remove duplicates) is not yet read for alpha
+yoruba_seda.o: yoruba_seda.h 
 
 yoruba_util.o: yoruba_util.h
 
-#yoruba_gbagbe: yoruba_gbagbe.c yoruba_util.o yoruba_inu.h SimpleOpt.h
-#	$(CXX) $(CXXFLAGS) -c -D_STANDALONE yoruba_gbagbe.c
-#	$(CXX) $(CXXFLAGS) -o $@ yoruba_gbagbe.o -L$(BAMTOOLS_LIB_DIR) $(LIBS)
+yoruba_ibeji.o: ibejiAlignment.h processReadPair.h 
 
-#yoruba_inu: yoruba_inu.c yoruba_util.o yoruba_inu.h SimpleOpt.h
-#	$(CXX) $(CXXFLAGS) -c -D_STANDALONE yoruba_inu.c
-#	$(CXX) $(CXXFLAGS) -o $@ yoruba_inu.o -L$(BAMTOOLS_LIB_DIR) $(LIBS)
 
-#yoruba_kojopodipo: yoruba_kojopodipo.c yoruba_util.o yoruba_kojopodipo.h SimpleOpt.h
-#	$(CXX) $(CXXFLAGS) -c -D_STANDALONE yoruba_kojopodopo.c
-#	$(CXX) $(CXXFLAGS) -o $@ $^ -L$(BAMTOOLS_LIB_DIR) $(LIBS)
+#---------------------------  Other targets
+
+
+bamtools-headers:
+	( cd $(BAMTOOLS_BUILD_DIR) ; make SharedHeaders )
+	( cd $(BAMTOOLS_BUILD_DIR) ; make APIHeaders )
+
+bamtools-static-library:
+	( cd $(BAMTOOLS_BUILD_DIR) ; make BamTools-static/fast )
+
+bamtools-clean:
+	( cd $(BAMTOOLS_BUILD_DIR) ; make clean )
+
+clean:
+	rm -f gmon.out *.o $(PROG)
+
+clean-all: clean bamtools-clean
+
+
+#---------------------------  Obsolete and/or waiting for cleanup/reuse
+
 
 sefibo.o: ibejiAlignment.h yoruba_util.h SimpleOpt.h
 
 sefibo: sefibo.o processReadPair.o yoruba_util.o ibejiAlignment.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ -L$(BAMTOOLS_LIB_DIR) $(LIBS)
 
-clean:
-	rm -fr gmon.out *.o *.a $(PROG) yoruba_kojopodipo a.out *~
+ibejiAlignment.o: ibejiAlignment.h
+
+processReadPair.o: processReadPair.h util.h
 
