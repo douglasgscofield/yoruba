@@ -20,7 +20,7 @@ where `<command>` is one of several specific commands.
 : Add or replace read group information
 
 `duplicate` or `seda`
-: Mark and remove duplicate paired-end and single-end reads
+: Mark and remove duplicate paired-end and single-end reads, **under development**
 
 Yoruba uses the [BamTools][] C++ API for handling BAM files and [SimpleOpt][]
 for handling command-line options.
@@ -68,12 +68,12 @@ indicating a missing reference sequence description.
 | Option                                     | Description |
 |--------------------------------------------|-------------|
 | `--no-mate`                                | forget references for mates of aligned reads |
-| `--o FILE` or `-o FILE` or `--output FILE` | output file name [default is stdout] |
+| `--o` *FILE* or `-o` *FILE* or `--output` *FILE* | output file name [default is stdout] |
 | `--?` or `-?` or `--help`                  | longer help |
-| `--progress INT`                           | print reads processed mod `INT` [100000] |
+| `--progress` *INT*                           | print reads processed mod *INT* [100000] |
 
-In the options table, `FILE` indicates a filename, and `INT` indicates an
-integer value, 
+In the options table, *FILE* indicates a filename, and *INT* indicates an
+integer value. 
 
 
 
@@ -109,13 +109,13 @@ in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
 
 | Option                     | Description |
 |----------------------------|-------------|
-| `--refs-to-report` INT     | number of reference sequences to provide details about |
-| `--reads-to-report` INT    | number of reads to provide details about [10] |
+| `--refs-to-report` *INT*     | number of reference sequences to provide details about |
+| `--reads-to-report` *INT*    | number of reads to provide details about [10] |
 | `--continue`               | continue reading after reporting detailed reads, report read number |
 | `--validate`               | check header validity using BamTools API; very strict |
 | `--?` or `-?` or `--help`  | longer help |
 
-In the options table, `INT` indicates an integer value.
+In the options table, *INT* indicates an integer value.
 
 
 
@@ -159,26 +159,26 @@ synonym `--id`.
 
 | Option                                     | Description |
 |--------------------------------------------|-------------|
-| `--ID STR` or `--id STR`                   | read group identifier |
-| `--LB STR` or `--library STR`              | read group library |
-| `--SM STR` or `--sample-name STR`          | read group sample name |
-| `--DS STR` or `--description STR`          | read group description |
-| `--DT STR` or `--date STR`                 | read group date |
-| `--PG STR` or `--programs STR`             | read group programs used |
-| `--PL STR` or `--platform STR`             | read group sequencing platform |
-| `--PU STR` or `--platform-unit STR`        | read group platform unit |
-| `--PI STR` or `--predicted-insert STR`     | read group predicted median insert size |
-| `--FO STR` or `--flow-order STR`           | read group flow order |
-| `--KS STR` or `--key-sequence STR`         | read group key sequence |
-| `--CN STR` or `--sequencing-center STR`    | read group sequencing center |
-| `--o FILE` or `-o FILE` or `--output FILE` | output file name [default is stdout] |
-| `--replace` STR                            | replace read group STR with --ID
+| `--ID` *STR* or `--id` *STR*                   | read group identifier |
+| `--LB` *STR* or `--library` *STR*              | read group library |
+| `--SM` *STR* or `--sample-name` *STR*          | read group sample name |
+| `--DS` *STR* or `--description` *STR*          | read group description |
+| `--DT` *STR* or `--date` *STR*                 | read group date |
+| `--PG` *STR* or `--programs` *STR*             | read group programs used |
+| `--PL` *STR* or `--platform` *STR*             | read group sequencing platform |
+| `--PU` *STR* or `--platform-unit` *STR*        | read group platform unit |
+| `--PI` *STR* or `--predicted-insert` *STR*     | read group predicted median insert size |
+| `--FO` *STR* or `--flow-order` *STR*           | read group flow order |
+| `--KS` *STR* or `--key-sequence` *STR*         | read group key sequence |
+| `--CN` *STR* or `--sequencing-center` *STR*    | read group sequencing center |
+| `--o` *FILE* or `-o` *FILE* or `--output` *FILE* | output file name [default is stdout] |
+| `--replace` *STR*                            | replace read group *STR* with --ID
 | `--clear`                                  | clear all read group information |
 | `--?` or `-?` or `--help`                  | longer help |
-| `--progress INT`                           | print reads processed mod `INT` [100000] |
+| `--progress` *INT*                           | print reads processed mod *INT* [100000] |
 
-In the options table, `STR` indicates a string argument, `INT` indicates an
-integer value, and `FILE` indicates a filename.
+In the options table, *STR* indicates a string argument, *INT* indicates an
+integer value, and *FILE* indicates a filename.
 
 No formatting restrictions are imposed on any of the read group strings. It is
 the user's responsibility to ensure that they conform to the SAM definitions
@@ -208,8 +208,8 @@ options on the read group dictionary and the RG tag on reads:
 <tr>
   <th bgcolor="#e4e4f0"></th>
   <th bgcolor="#eeeefa">no RG</th>
-  <th bgcolor="#eeeefa">RG matches <code>STR</code></th>
-  <th bgcolor="#eeeefa">RG does not match <code>STR</code></th>
+  <th bgcolor="#eeeefa">RG matches <code>*STR*</code></th>
+  <th bgcolor="#eeeefa">RG does not match <code>*STR*</code></th>
   <th bgcolor="#e4e4f0"></th>
 </tr>
 </thead>
@@ -220,11 +220,11 @@ options on the read group dictionary and the RG tag on reads:
   <td align="center">RG added</td>
 </tr>
 <tr>
-  <td><code>--replace STR</code></td>
+  <td><code>--replace *STR*</code></td>
   <td align="center">no change</td>
   <td align="center">RG changed to <code>--ID</code></td>
   <td align="center">no change</td>
-  <td align="center">RG <code>STR</code> updated with <code>--ID</code>; replaced if any other RG options</td>
+  <td align="center">RG <code>*STR*</code> updated with <code>--ID</code>; replaced if any other RG options</td>
 </tr>
 <tr>
   <td><code>--clear</code>, no <code>--ID</code></td>
@@ -242,4 +242,31 @@ options on the read group dictionary and the RG tag on reads:
 </table>
 
 
+
+duplicate
+---------
+
+    yoruba duplicate [options] <in.bam>
+    yoruba seda [options] <in.bam>
+
+**Under development, unsafe to use, operation will be unpredictable**
+
+Determines duplicate reads in a BAM file, marks them as duplicates, and removes
+them on option.  *Seda* is the Yoruba (Nigeria) verb for 'to copy'.  Either
+command invokes this function.  At most one input BAM file is allowed.
+
+| Option                     | Description |
+|----------------------------|-------------|
+| `--as-single-end`          | all reads treated as single-end, ignore pairing
+| `--single-end-only`        | only look for duplicates in single-end reads
+| `--paired-end-only`        | only look for duplicates in paired-end reads
+| `--remove`                 | remove reads from the output BAM
+| `--duplicate-file` *FILE*    | write duplicate reads to BAM file *FILE*, note this does not currently imply `--remove`
+| `--o` *FILE* or `-o` *FILE* or `--output` *FILE* | output file name [default is stdout]
+| `--?` | `-?` | `--help`    | longer help
+| `--debug` *INT*              | debug info level *INT* [1]
+| `--reads` *INT*              | only process *INT* reads [-1]
+| `--progress` *INT*           | print reads processed mod *INT* [100000]
+
+In the options table, *INT* indicates an integer value, and *FILE* indicates a filename.
 
