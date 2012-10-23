@@ -29,6 +29,7 @@ for handling command-line options.
 would like to use [yoruba][] and I'll help get you started.
 
 [Contact]:   mailto:douglasgscofield@gmail.com
+[yoruba]:    https://github.com/douglasgscofield/yoruba
 [BamTools]:  https://github.com/pezmaster31/bamtools
 [SimpleOpt]: http://code.jellycan.com/simpleopt
 
@@ -208,8 +209,8 @@ options on the read group dictionary and the RG tag on reads:
 <tr>
   <th bgcolor="#e4e4f0"></th>
   <th bgcolor="#eeeefa">no RG</th>
-  <th bgcolor="#eeeefa">RG matches <code>*STR*</code></th>
-  <th bgcolor="#eeeefa">RG does not match <code>*STR*</code></th>
+  <th bgcolor="#eeeefa">RG matches <code><I>STR</I></code></th>
+  <th bgcolor="#eeeefa">RG does not match <code><I>STR</I></code></th>
   <th bgcolor="#e4e4f0"></th>
 </tr>
 </thead>
@@ -220,11 +221,11 @@ options on the read group dictionary and the RG tag on reads:
   <td align="center">RG added</td>
 </tr>
 <tr>
-  <td><code>--replace *STR*</code></td>
+  <td><code>--replace <I>STR</I></code></td>
   <td align="center">no change</td>
   <td align="center">RG changed to <code>--ID</code></td>
   <td align="center">no change</td>
-  <td align="center">RG <code>*STR*</code> updated with <code>--ID</code>; replaced if any other RG options</td>
+  <td align="center">RG <code><I>STR</I></code> updated with <code>--ID</code>; replaced if any other RG options</td>
 </tr>
 <tr>
   <td><code>--clear</code>, no <code>--ID</code></td>
@@ -265,7 +266,7 @@ command invokes this function.  At most one input BAM file is allowed.
 | `--o` *FILE* or `-o` *FILE* or `--output` *FILE* | output file name [default is stdout]
 | `--?` | `-?` | `--help`    | longer help
 | `--debug` *INT*              | debug info level *INT* [1]
-| `--reads` *INT*              | only process *INT* reads [-1]
+| `--reads` *INT*              | only process *INT* reads (-1 = all) [-1]
 | `--progress` *INT*           | print reads processed mod *INT* [100000]
 
 In the options table, *INT* indicates an integer value, and *FILE* indicates a filename.
