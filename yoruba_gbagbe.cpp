@@ -6,9 +6,9 @@
 // Gbagbe dynamically reassociating reads with reference sequences in a BAM
 // file, removing reference sequences from the BAM header that are not actually
 // referred to by reads.  Mates that reference sequences that the aligned reads
-// do not reference will have their reference changed to -1, unless --mate is 
-// specified, then the mates' reference sequences will be included in the output
-// BAM.
+// do not reference will also have their reference sequences kept in the header,
+// unless --no-mate is specified, then the mates' reference sequences will be 
+// changed to -1.
 //
 // Gbagbe is the Yoruba (Nigeria) verb for 'to forget'.
 //
@@ -34,7 +34,7 @@ static bool         opt_mate = true; // with --no-mate, forget references for ma
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 0;
 static int64_t      opt_reads = -1;
-static int64_t      opt_progress = 100000; // 100000;
+static int64_t      opt_progress = 0; // 1000000;
 #endif
 static const string delim = "'";
 static const string sep = "\t";

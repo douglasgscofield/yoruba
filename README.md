@@ -110,7 +110,7 @@ in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
 
 | Option                     | Description |
 |----------------------------|-------------|
-| `--refs-to-report` *INT*     | number of reference sequences to provide details about |
+| `--refs-to-report` *INT*     | number of reference sequences to provide details about [10] |
 | `--reads-to-report` *INT*    | number of reads to provide details about [10] |
 | `--continue`               | continue reading after reporting detailed reads, report read number |
 | `--validate`               | check header validity using BamTools API; very strict |

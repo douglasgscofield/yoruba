@@ -36,7 +36,7 @@ static bool         opt_clear = false;
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 0;
 static int64_t      opt_reads = -1;
-static int64_t      opt_progress = 100000;
+static int64_t      opt_progress = 0; // 1000000;
 static int64_t      debug_reads_to_report = 1;
 #endif
 
