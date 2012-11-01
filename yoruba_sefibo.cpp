@@ -147,7 +147,7 @@ is calculates as follows: \n\
 \n\
 \n";
     }
-    cerr << "         --? | -? | --help                   longer help" << endl;
+    cerr << "         -? | --help     longer help" << endl;
     cerr << endl;
 #ifdef _WITH_DEBUG
     cerr << "         --debug INT     debug info level INT [" << opt_debug << "]" << endl;

@@ -16,6 +16,10 @@
 #include <iomanip>
 #include <string>
 #include <list>
+#include <fstream>
+#include <sstream>
+#include <map>
+#include <tr1/unordered_map>
 
 // BamTools includes: my own fork of https://github.com/pezmaster31/bamtools
 #include "api/BamAux.h"

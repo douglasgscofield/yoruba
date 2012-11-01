@@ -35,6 +35,7 @@ static string       replace_string;
 static bool         opt_clear = false;
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 0;
+static int32_t      debug_progress = 100000;
 static int64_t      opt_reads = -1;
 static int64_t      opt_progress = 0; // 1000000;
 static int64_t      debug_reads_to_report = 1;
@@ -100,10 +101,10 @@ The only argument required to specify a valid read group is --ID or --id.\n\
     cerr << "         --KS STR | --key-sequence STR       read group key sequence" << endl;
     cerr << "         --CN STR | --sequencing-center STR  read group sequencing center" << endl;
     cerr << endl;
-    cerr << "         --o FILE | -o FILE | --output FILE  output file name [default is stdout]" << endl;
+    cerr << "         -o FILE | --output FILE             output file name [default is stdout]" << endl;
     cerr << "         --replace STR                       replace read group STR with --ID" << endl;
     cerr << "         --clear                             clear all read group information" << endl;
-    cerr << "         --? | -? | --help                   longer help" << endl;
+    cerr << "         -? | --help                         longer help" << endl;
     cerr << endl;
 #ifdef _WITH_DEBUG
     cerr << "         --debug INT     debug info level INT [" << opt_debug << "]" << endl;
@@ -201,15 +202,13 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         { OPT_FO, "--FO", SO_REQ_SEP }, { OPT_FO, "--flow-order", SO_REQ_SEP },
         { OPT_KS, "--KS", SO_REQ_SEP }, { OPT_KS, "--key-sequence", SO_REQ_SEP },
         { OPT_CN, "--CN", SO_REQ_SEP }, { OPT_CN, "--sequencing-center", SO_REQ_SEP },
-        { OPT_output,      "--o", SO_REQ_SEP }, 
-        { OPT_output,      "-o", SO_REQ_SEP }, 
         { OPT_output,      "--output", SO_REQ_SEP },
+        { OPT_output,      "-o", SO_REQ_SEP }, 
         { OPT_dictionary,  "--dictionary", SO_REQ_SEP },
         { OPT_replace,     "--replace", SO_REQ_SEP },
         { OPT_clear,       "--clear", SO_NONE },
-        { OPT_help,        "--?", SO_NONE }, 
-        { OPT_help,        "-?", SO_NONE }, 
         { OPT_help,        "--help", SO_NONE },
+        { OPT_help,        "-?", SO_NONE }, 
 #ifdef _WITH_DEBUG
         { OPT_debug,       "--debug", SO_REQ_SEP },
         { OPT_reads,       "--reads", SO_REQ_SEP },
@@ -272,6 +271,9 @@ yoruba::main_kojopodipo(int argc, char* argv[])
             return EXIT_FAILURE;
         }
     }
+
+    if (DEBUG(1) && ! opt_progress)
+        opt_progress = debug_progress;
 
     // set up input location; if file not specified, use /dev/stdin
     IF_DEBUG(1) {

@@ -38,6 +38,7 @@ static bool         opt_duplicatefile;  // set with --duplicate-file FILE
 static string       duplicate_file;     // set with --duplicate-file FILE, holds FILE
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 1;
+static int32_t      debug_progress = 100000;
 static int64_t      opt_reads = -1;
 static int64_t      opt_progress = 100000; // 100000;
 static int64_t      last_n_reads_mod = 0;  // helps with progress output during pass1
@@ -76,20 +77,20 @@ them on option.\n\
 \n\
 NOTE: THIS COMMAND IS INCOMPLETE, DO NOT USE\n\
 \n\
-Options: --as-single-end                     all reads treated as single-end, ignore pairing\n\
-         --single-end-only                   only look for duplicates in single-end reads\n\
-         --paired-end-only                   only look for duplicates in paired-end reads\n\
-         --remove                            remove reads from the output BAM\n\
-         --duplicate-file FILE               write duplicate reads to BAM file FILE,\n\
-                                             note this does not currently imply --remove\n\
-         --o FILE | -o FILE | --output FILE  output file name [default is stdout]\n\
-         --? | -? | --help                   longer help\n\
+Options: --as-single-end           all reads treated as single-end, ignore pairing\n\
+         --single-end-only         only look for duplicates in single-end reads\n\
+         --paired-end-only         only look for duplicates in paired-end reads\n\
+         --remove                  remove reads from the output BAM\n\
+         --duplicate-file FILE     write duplicate reads to BAM file FILE,\n\
+                                   note this does not currently imply --remove\n\
+         -o FILE | --output FILE   output file name [default is stdout]\n\
+         -? | --help               onger help\n\
 \n";
 #ifdef _WITH_DEBUG
     cerr << "\
-         --debug INT     debug info level INT [" << opt_debug << "]\n\
-         --reads INT     only process INT reads [" << opt_reads << "]\n\
-         --progress INT  print reads processed mod INT [" << opt_progress << "]\n\
+         --debug INT      debug info level INT [" << opt_debug << "]\n\
+         --reads INT      only process INT reads [" << opt_reads << "]\n\
+         --progress INT   print reads processed mod INT [" << opt_progress << "]\n\
 \n";
 #endif
     cerr << "Seda is the Yoruba (Nigeria) verb for 'to copy'." << endl;
@@ -161,12 +162,10 @@ yoruba::main_seda(int argc, char* argv[])
         { OPT_paired_only,     "--paired-end-only", SO_NONE },
         { OPT_remove,          "--remove",          SO_NONE },
         { OPT_duplicatefile,   "--duplicate-file",  SO_REQ_SEP },
-        { OPT_help,            "--?",               SO_NONE }, 
-        { OPT_help,            "-?",                SO_NONE }, 
         { OPT_help,            "--help",            SO_NONE },
-        { OPT_output,          "--o",               SO_REQ_SEP },
-        { OPT_output,          "-o",                SO_REQ_SEP },
+        { OPT_help,            "-?",                SO_NONE }, 
         { OPT_output,          "--output",          SO_REQ_SEP },
+        { OPT_output,          "-o",                SO_REQ_SEP },
 #ifdef _WITH_DEBUG
         { OPT_debug,           "--debug",           SO_REQ_SEP },
         { OPT_reads,           "--reads",           SO_REQ_SEP },
@@ -209,6 +208,9 @@ yoruba::main_seda(int argc, char* argv[])
             return EXIT_FAILURE;
         }
     }
+
+    if (DEBUG(1) && ! opt_progress)
+        opt_progress = debug_progress;
 
     if (args.FileCount() > 1) {
         cerr << NAME << " requires at most one BAM file specified as input" << endl;
