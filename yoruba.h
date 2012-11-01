@@ -4,9 +4,6 @@
 #define YORUBA_NAME    "yoruba"
 #define YORUBA_AUTHOR  "Douglas G. Scofield"
 #define YORUBA_CONTACT "douglasgscofield@gmail.com"
-#define YORUBA_VERSION "0.0.4"
-#ifdef _YORUBA_MAIN
-#define NAME "[" YORUBA_NAME "]"
-#endif
+#define YORUBA_VERSION "0.0.3"
 
 #endif // _YORUBA_H_

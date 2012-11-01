@@ -58,12 +58,6 @@ take a while to load...
 which reference sequences are mentioned, and the second to write the output
 BAM.
 
-A list of reference sequences to keep regardless of whether they are referred
-to can be provided with the `--list` option.  The file can be in BED format, as
-a single name per line, or in any other format for which the reference sequence
-name is the first whitespace-separated field.  Lines beginning with `#` are
-ignored.
-
 For paired-end reads with an aligned mate, the reference sequence of the
 aligned mate is mentioned in the BAM record for the read.  By default, `yoruba
 forget` will keep descriptions of reference sequences mentioned for mates.
@@ -72,13 +66,12 @@ forgotten, and the reference sequence ID for the mate will be changed to `-1`,
 indicating a missing reference sequence description.
 
 
-| Option                            | Description |
-|-----------------------------------|-------------|
-| `--no-mate`                       | forget references for mates of aligned reads |
-| `-L` *FILE* or `--list` *FILE*    | list of reference sequences to keep (names or BED) |
-| `-o` *FILE* or `--output` *FILE*  | output file name [default is stdout] |
-| `-?` or `--help`                  | longer help |
-| `--progress` *INT*                | print reads processed mod *INT* [100000] |
+| Option                                     | Description |
+|--------------------------------------------|-------------|
+| `--no-mate`                                | forget references for mates of aligned reads |
+| `--o` *FILE* or `-o` *FILE* or `--output` *FILE* | output file name [default is stdout] |
+| `--?` or `-?` or `--help`                  | longer help |
+| `--progress` *INT*                           | print reads processed mod *INT* [100000] |
 
 In the options table, *FILE* indicates a filename, and *INT* indicates an
 integer value. 
@@ -112,17 +105,16 @@ in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
    
 5. *comment lines* (`@CO`) which are individual text lines
 
-6. finally, *reads*, which may be aligned or unaligned; neither read sequences
-   nor base-specific qualities are printed
+6. finally, *reads*, which may be aligned or unaligned.
 
 
 | Option                     | Description |
 |----------------------------|-------------|
-| `--refs-to-report` *INT*   | number of reference sequences to provide details about [10] |
-| `--reads-to-report` *INT*  | number of reads to provide details about [10] |
+| `--refs-to-report` *INT*     | number of reference sequences to provide details about [10] |
+| `--reads-to-report` *INT*    | number of reads to provide details about [10] |
 | `--continue`               | continue reading after reporting detailed reads, report read number |
 | `--validate`               | check header validity using BamTools API; very strict |
-| `-?` or `--help`           | longer help |
+| `--?` or `-?` or `--help`  | longer help |
 
 In the options table, *INT* indicates an integer value.
 
@@ -166,25 +158,25 @@ See table below.
 The only argument required to specify a valid read group is `--ID` or its
 synonym `--id`.
 
-| Option                                      | Description |
-|---------------------------------------------|-------------|
-| `--ID` *STR* or `--id` *STR*                | read group identifier |
-| `--LB` *STR* or `--library` *STR*           | read group library |
-| `--SM` *STR* or `--sample-name` *STR*       | read group sample name |
-| `--DS` *STR* or `--description` *STR*       | read group description |
-| `--DT` *STR* or `--date` *STR*              | read group date |
-| `--PG` *STR* or `--programs` *STR*          | read group programs used |
-| `--PL` *STR* or `--platform` *STR*          | read group sequencing platform |
-| `--PU` *STR* or `--platform-unit` *STR*     | read group platform unit |
-| `--PI` *STR* or `--predicted-insert` *STR*  | read group predicted median insert size |
-| `--FO` *STR* or `--flow-order` *STR*        | read group flow order |
-| `--KS` *STR* or `--key-sequence` *STR*      | read group key sequence |
-| `--CN` *STR* or `--sequencing-center` *STR* | read group sequencing center |
-| `-o` *FILE* or `--output` *FILE*            | output file name [default is stdout] |
-| `--replace` *STR*                           | replace read group *STR* with --ID
-| `--clear`                                   | clear all read group information |
-| `-?` or `--help`                            | longer help |
-| `--progress` *INT*                          | print reads processed mod *INT* [100000] |
+| Option                                     | Description |
+|--------------------------------------------|-------------|
+| `--ID` *STR* or `--id` *STR*                   | read group identifier |
+| `--LB` *STR* or `--library` *STR*              | read group library |
+| `--SM` *STR* or `--sample-name` *STR*          | read group sample name |
+| `--DS` *STR* or `--description` *STR*          | read group description |
+| `--DT` *STR* or `--date` *STR*                 | read group date |
+| `--PG` *STR* or `--programs` *STR*             | read group programs used |
+| `--PL` *STR* or `--platform` *STR*             | read group sequencing platform |
+| `--PU` *STR* or `--platform-unit` *STR*        | read group platform unit |
+| `--PI` *STR* or `--predicted-insert` *STR*     | read group predicted median insert size |
+| `--FO` *STR* or `--flow-order` *STR*           | read group flow order |
+| `--KS` *STR* or `--key-sequence` *STR*         | read group key sequence |
+| `--CN` *STR* or `--sequencing-center` *STR*    | read group sequencing center |
+| `--o` *FILE* or `-o` *FILE* or `--output` *FILE* | output file name [default is stdout] |
+| `--replace` *STR*                            | replace read group *STR* with --ID
+| `--clear`                                  | clear all read group information |
+| `--?` or `-?` or `--help`                  | longer help |
+| `--progress` *INT*                           | print reads processed mod *INT* [100000] |
 
 In the options table, *STR* indicates a string argument, *INT* indicates an
 integer value, and *FILE* indicates a filename.
@@ -270,12 +262,12 @@ command invokes this function.  At most one input BAM file is allowed.
 | `--single-end-only`        | only look for duplicates in single-end reads
 | `--paired-end-only`        | only look for duplicates in paired-end reads
 | `--remove`                 | remove reads from the output BAM
-| `--duplicate-file` *FILE*  | write duplicate reads to BAM file *FILE*, note this does not currently imply `--remove`
-| `-o` *FILE* or `--output` *FILE* | output file name [default is stdout]
-| `-?` | `--help`            | longer help
-| `--debug` *INT*            | debug info level *INT* [1]
-| `--reads` *INT*            | only process *INT* reads (-1 = all) [-1]
-| `--progress` *INT*         | print reads processed mod *INT* [100000]
+| `--duplicate-file` *FILE*    | write duplicate reads to BAM file *FILE*, note this does not currently imply `--remove`
+| `--o` *FILE* or `-o` *FILE* or `--output` *FILE* | output file name [default is stdout]
+| `--?` | `-?` | `--help`    | longer help
+| `--debug` *INT*              | debug info level *INT* [1]
+| `--reads` *INT*              | only process *INT* reads (-1 = all) [-1]
+| `--progress` *INT*           | print reads processed mod *INT* [100000]
 
 In the options table, *INT* indicates an integer value, and *FILE* indicates a filename.
 
