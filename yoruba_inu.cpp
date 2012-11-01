@@ -33,6 +33,7 @@ static bool         opt_validate = false;
 static int32_t      opt_refs_to_report = 10;
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 0;
+static int32_t      debug_progress = 100000;
 static int64_t      opt_reads = -1;
 static int64_t      opt_progress = 0; // 100000;
 #endif
@@ -68,23 +69,22 @@ usage()
 Summarizes the contents of the BAM file <in.bam>.\n\
 \n\
 Output includes:\n\
-   (1) header lines exclusive of the reference sequences (@SQ lines)\n\
-   (2) a summary of reference sequences, if there are more than " << opt_refs_to_report << ",\n\
-       otherwise all @SQ lines are printed\n\
-   (3) a summary of read content\n\
+   (1) header lines exclusive of reference sequences\n\
+   (2) the first " << opt_refs_to_report << " reference sequences\n\
+   (3) mapping characteristics of the first " << opt_reads_to_report << " reads\n\
 \n";
     cerr << "\
-Options: --reads-to-report INT  print this many reads [" << opt_reads_to_report << "]\n\
-         --refs-to-report INT   print this many references [" << opt_refs_to_report << "]\n\
-         --continue             continue counting reads until the end of the BAM\n\
-         --validate             check validity using BamTools API; very strict\n\
-         --? | -? | --help      longer help\n\
+Options: --reads-to-report INT   print this many reads [" << opt_reads_to_report << "]\n\
+         --refs-to-report INT    print this many references [" << opt_refs_to_report << "]\n\
+         --continue              continue counting reads until the end of the BAM\n\
+         --validate              check validity using BamTools API; very strict\n\
+         -? | --help             longer help\n\
 \n";
 #ifdef _WITH_DEBUG
     cerr << "\
-         --debug INT     debug info level INT [" << opt_debug << "]\n\
-         --reads INT     only process INT reads [" << opt_reads << "]\n\
-         --progress INT  print reads processed mod INT [" << opt_progress << "]\n\
+         --debug INT      debug info level INT [" << opt_debug << "]\n\
+         --reads INT      only process INT reads [" << opt_reads << "]\n\
+         --progress INT   print reads processed mod INT [" << opt_progress << "]\n\
 \n";
 #endif
     cerr << "Inu is the Yoruba (Nigeria) noun for 'inside'." << endl;
@@ -117,9 +117,8 @@ yoruba::main_inu(int argc, char* argv[])
         { OPT_reads_to_report, "--reads-to-report", SO_REQ_SEP },
         { OPT_continue,        "--continue",        SO_NONE },
         { OPT_validate,        "--validate",        SO_NONE },
-        { OPT_help,            "--?",               SO_NONE }, 
-        { OPT_help,            "-?",                SO_NONE }, 
         { OPT_help,            "--help",            SO_NONE },
+        { OPT_help,            "-?",                SO_NONE }, 
 #ifdef _WITH_DEBUG
         { OPT_debug,           "--debug",           SO_REQ_SEP },
         { OPT_reads,           "--reads",           SO_REQ_SEP },
@@ -155,6 +154,9 @@ yoruba::main_inu(int argc, char* argv[])
             return EXIT_FAILURE;
         }
     }
+
+    if (DEBUG(1) && ! opt_progress)
+        opt_progress = debug_progress;
 
     if (args.FileCount() > 1) {
         cerr << NAME << " requires at most one BAM file specified as input" << endl;
