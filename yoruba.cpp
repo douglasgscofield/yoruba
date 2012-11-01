@@ -1,7 +1,9 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include <string>
+#include <ctime>
 
 #undef _STANDALONE
 #undef _IMPLEMENTED
@@ -48,26 +50,30 @@ usage()
 int
 main (int argc, char* argv[])
 {
+    clock_t time_start = clock();
     if (argc < 2) return usage();
     string cmd = argv[1];
+    int retval = EXIT_SUCCESS;
     if (cmd == "forget" || cmd == "gbagbe") 
-        return main_gbagbe(argc-1, argv+1);
+        retval = main_gbagbe(argc-1, argv+1);
     else if (cmd == "inside" || cmd == "inu") 
-        return main_inu(argc-1, argv+1);
+        retval = main_inu(argc-1, argv+1);
     else if (cmd == "readgroup" || cmd == "kojopodipo") 
-        return main_kojopodipo(argc-1, argv+1);
+        retval = main_kojopodipo(argc-1, argv+1);
     else if (cmd == "duplicate" || cmd == "seda") 
-        return main_seda(argc-1, argv+1);
+        retval = main_seda(argc-1, argv+1);
 #ifdef _IMPLEMENTED
     else if (cmd == "insert" || cmd == "sefibo") 
-        return main_sefibo(argc-1, argv+1);
+        retval = main_sefibo(argc-1, argv+1);
     else if (cmd == "twinreads" || cmd == "ibeji") 
-        return main_ibeji(argc-1, argv+1);
+        retval = main_ibeji(argc-1, argv+1);
 #endif
     else {
         cerr << "Unrecognized command '" << argv[1] << "'" << endl;
-        return EXIT_FAILURE;
+        retval = EXIT_FAILURE;
     }
-    return EXIT_SUCCESS;
+    float runtime = ((float)(clock() - time_start)) / CLOCKS_PER_SEC;
+    cerr << NAME << " runtime " << fixed << setprecision(3) << runtime << " sec" << endl;
+    return retval;
 }
 
