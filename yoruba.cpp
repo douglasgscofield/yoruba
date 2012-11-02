@@ -1,3 +1,23 @@
+// yoruba.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+//
+// Yoruba queries and manipulates BAM files.  The goal is to provide either 
+// additional functionality or more efficient and/or flexible versions of 
+// operations provided by samtools and Picard tools.
+//
+// Yoruba is a major language spoken around Nigeria.
+//
+// Uses BamTools C++ API for handling BAM files
+
+
+// CHANGELOG
+//
+//
+//
+// TODO
+// --- add typedefs for reference id (int32_t), number of reads (int64_t), etc. 
+//     consistent with real world and SAM specification... or does BamTools 
+//     provide these?
+
 
 #include <cstdlib>
 #include <iostream>

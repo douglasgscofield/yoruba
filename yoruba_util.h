@@ -31,6 +31,8 @@
 #define DEBUG(__lvl__) (false)
 #endif
 
+#define PLURAL(__n) (__n == 1 ? "" : "s")
+
 namespace yoruba {
 
 bool 

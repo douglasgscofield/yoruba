@@ -20,6 +20,12 @@
 //
 //
 // TODO
+// --- is immediate EXIT_FAILURE the appropriate response to missing a
+//     reference sequence on the input (al.RefID == -1)?
+// --- add --usage-file
+// xxx implement mention-by-name
+// xxx clean up mention-by-mates (currently doing message output)
+// xxx add --usage
 //
 
 #include "yoruba_gbagbe.h"
@@ -30,6 +36,8 @@ using namespace yoruba;
 
 static string       input_file;
 static string       output_file;  // defaults to stdout, set with -o FILE
+static bool         opt_usageonly = false; // with --usage-only, do not produce output BAM
+static string       usage_file; // write per-reference usage to FILE, does not imply --usage-only
 static bool         opt_mate = true; // with --no-mate, forget references for mates too
 static string       list_file; // --list file (bed or simply a list) containing references to keep
 #ifdef _WITH_DEBUG
@@ -38,9 +46,15 @@ static int32_t      debug_progress = 100000;
 static int64_t      opt_reads = -1;
 static int64_t      opt_progress = 0; // 1000000;
 #endif
-static const string delim = "'";
 static const string sep = "\t";
-static const string endline = "\n";
+class refStats {  // holds statistics for reference sequences
+    public:
+        string  ref; 
+        int32_t old_id;
+        int64_t m_read, m_mate; 
+        bool    m_name, no_mate; 
+        int32_t new_id;
+};
 
 
 //-------------------------------------
@@ -92,6 +106,8 @@ as the first field.\n\
 \n";
     cerr << "\
 Options: --no-mate                 also forget references for paired-end mates\n\
+         --usage-only              analyze reference usage, do not produce output BAM\n\
+         --usage-file FILE         write per-reference usage details to FILE\n\
          -L FILE | --list FILE     list of reference sequences to keep (names or BED)\n\
          -o FILE | --output FILE   output file name [default is stdout]\n\
          -? | --help               longer help\n\
@@ -132,7 +148,7 @@ yoruba::main_gbagbe(int argc, char* argv[])
 		return usage();
 	}
     
-    enum { OPT_output, OPT_nomate, OPT_mate, OPT_list,
+    enum { OPT_output, OPT_nomate, OPT_usageonly, OPT_usagefile, OPT_list,
 #ifdef _WITH_DEBUG
         OPT_debug, OPT_reads, OPT_progress,
 #endif
@@ -140,7 +156,8 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
     CSimpleOpt::SOption gbagbe_options[] = {
         { OPT_nomate,          "--no-mate",         SO_NONE }, 
-        //{ OPT_mate,            "--mate",            SO_NONE }, 
+        { OPT_usageonly,       "--usage-only",      SO_NONE }, 
+        { OPT_usagefile,       "--usage-file",      SO_REQ_SEP }, 
         { OPT_help,            "--help",            SO_NONE },
         { OPT_help,            "-?",                SO_NONE }, 
         { OPT_list,            "--list",            SO_REQ_SEP },
@@ -164,10 +181,12 @@ yoruba::main_gbagbe(int argc, char* argv[])
         }
         if (args.OptionId() == OPT_help) {
             return usage(true);
-        //} else if (args.OptionId() == OPT_mate) {
-        //    opt_mate = true;
         } else if (args.OptionId() == OPT_nomate) {
             opt_mate = false;
+        } else if (args.OptionId() == OPT_usageonly) {
+            opt_usageonly = true;
+        } else if (args.OptionId() == OPT_usagefile) {
+            usage_file = args.OptionArg();
         } else if (args.OptionId() == OPT_list) {
             list_file = args.OptionArg();
         } else if (args.OptionId() == OPT_output) {
@@ -209,26 +228,26 @@ yoruba::main_gbagbe(int argc, char* argv[])
     //----------------- If --list option used, open file and read in list of references
 
     //typedef std::tr1::unordered_map<string, int32_t> bedMap;
-    typedef std::tr1::unordered_map<string, bool> bedMap;
-    bedMap bed_map;
-    int32_t n_refs_added_by_name = 0;
+    typedef std::tr1::unordered_map<string, bool> nameMap;
+    nameMap name_map;
     if (! list_file.empty()) {
+        if (opt_progress || DEBUG(1))
+            cerr << NAME << "[pass1] reading reference sequence names from "
+                << list_file << endl;
         ifstream list_stream(list_file.c_str());
         vector<string> fields;
         char buf[10001];
         int32_t nl = 0;
         while (list_stream.getline(buf, 10000)) {
             ++nl;
-            IF_DEBUG(1)
-                cerr << "list line " << nl << " " << buf << endl;
+            IF_DEBUG(1) cerr << "list line " << nl << " " << buf << endl;
             // ignore lines beginning with "#"
             if (buf[0] == '#') continue;
             stringstream line_stream(buf);
             string ref = "";
             line_stream >> noskipws >> ref;
-            IF_DEBUG(1)
-                cerr << "list line " << nl << " ref :" << ref << ":" << endl;
-            bed_map[ref] = true;
+            IF_DEBUG(1) cerr << "list line " << nl << " ref :" << ref << ":" << endl;
+            name_map[ref] = true;
 
         }
         list_stream.close();
@@ -241,7 +260,7 @@ yoruba::main_gbagbe(int argc, char* argv[])
 	BamReader reader;
 
     if (opt_progress || DEBUG(1))
-        cerr << NAME << "[pass1] opening input BAM and reading references" << endl;
+        cerr << NAME << "[pass1] opening input BAM and reading references..." << endl;
 
 	if (! reader.Open(input_file)) {
         cerr << NAME << "could not open BAM input" << endl;
@@ -288,11 +307,14 @@ yoruba::main_gbagbe(int argc, char* argv[])
     //----------------- Pass 1: Determine which references are used
 
 
-    if (opt_progress || DEBUG(1))
+    if (true || opt_progress || DEBUG(1))
         cerr << NAME << "[pass1] " << reader.GetReferenceCount() 
             << " references in the input BAM" << endl;
 
-    vector<int64_t> refs_used( reader.GetReferenceCount() );
+    vector<int64_t> refs_mentioned( reader.GetReferenceCount() );
+    vector<int64_t> refs_mentioned_mate( reader.GetReferenceCount() );
+    int64_t n_unref_mentioned = 0;
+    int64_t n_unref_mentioned_mate = 0;
 
     int64_t n_reads = 0;  // number of reads processed
 	BamAlignment al;  // holds the current read from the BAM file
@@ -302,15 +324,21 @@ yoruba::main_gbagbe(int argc, char* argv[])
         ++n_reads;
         if (al.IsMapped()) {
             if (al.RefID < 0) {
-                cerr << NAME << "[pass1] missing reference sequence from input bam" << endl;
-                return EXIT_FAILURE;
+                ++n_unref_mentioned;
+                // cerr << NAME << "[pass1] missing reference sequence from input bam" << endl;
+                // return EXIT_FAILURE;
             }
-            ++refs_used[al.RefID];
+            ++refs_mentioned[al.RefID];
         }
-        if (opt_mate && al.IsPaired() && al.IsMateMapped() && al.MateRefID >= 0)
-            // if a reference is missing for a mapped mate then MateRefID == -1,
+        // we should track referenced mentioned in mates regardless of opt_mate
+        //if (opt_mate && al.IsPaired() && al.IsMateMapped() && al.MateRefID >= 0) {
+        if (al.IsPaired() && al.IsMateMapped() && al.MateRefID >= 0) {
             // an unmapped mate has our RefID and Position, so not a reference "use"
-            ++refs_used[al.MateRefID];
+            ++refs_mentioned_mate[al.MateRefID];
+        } else if (al.IsPaired() && al.IsMateMapped() && al.MateRefID < 0) {
+            // if a reference is missing for a mapped mate then MateRefID == -1,
+            ++n_unref_mentioned_mate;
+        }
 
         if ((opt_progress || DEBUG(1)) && n_reads % opt_progress == 0)
             cerr << NAME << "[pass1] " << n_reads << " reads examined..." << endl;
@@ -325,17 +353,55 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
     const RefVector& old_refs = reader.GetReferenceData();
     RefVector        new_refs;
+    int32_t n_refs_mention = 0;
+    int32_t n_refs_mate = 0;
+    int32_t n_refs_mate_not_kept = 0;
+    int32_t n_refs_name = 0;
+
+    // gather data for --usage-file report, but don't allocate vector if not needed
+    vector<refStats> refs_stats;
+    if (! usage_file.empty()) {
+        refs_stats.resize(reader.GetReferenceCount() + 1);
+        size_t i_unref = refs_stats.size() - 1;  // last entry, for mentions of ref -1
+        for (size_t i = 0; i < refs_mentioned.size(); ++i) {
+            refs_stats[i].ref = old_refs[i].RefName;
+            refs_stats[i].old_id = i;
+            refs_stats[i].m_read = refs_mentioned[i];
+            refs_stats[i].m_mate = refs_mentioned_mate[i];
+            refs_stats[i].m_name = ! name_map.empty() && name_map.find(refs_stats[i].ref) != name_map.end();
+            refs_stats[i].no_mate = false;
+            refs_stats[i].new_id = -1;
+        }
+        refs_stats[i_unref].ref = "*";
+        refs_stats[i_unref].old_id = -1;
+        refs_stats[i_unref].m_read = n_unref_mentioned;
+        refs_stats[i_unref].m_mate = n_unref_mentioned_mate;
+        refs_stats[i_unref].m_name = false;
+        refs_stats[i_unref].no_mate = false;
+        refs_stats[i_unref].new_id = -1;
+    }
 
     assert(new_header.Sequences.IsEmpty());  // new_refs contains the new @SQ info
     int32_t new_RefID = 0;
-    for (size_t i = 0; i < refs_used.size(); ++i) {
+    for (size_t i = 0; i < refs_mentioned.size(); ++i) {
 
-        if (refs_used[i] > 0) {
+        if (   (refs_mentioned[i] > 0)  // if any of the reasons for keeping it are true
+            || (opt_mate && refs_mentioned_mate[i] > 0)
+            || (! name_map.empty() && name_map.find(old_refs[i].RefName) != name_map.end())) {
+
+            if (refs_mentioned[i] > 0) {
+                ++n_refs_mention;
+            } else if (opt_mate && refs_mentioned_mate[i] > 0) {
+                ++n_refs_mate;
+            } else if (! name_map.empty() && name_map.find(old_refs[i].RefName) != name_map.end()) {
+                ++n_refs_name;
+            }
+
             new_refs.push_back(old_refs[i]);
 #ifdef _BAMTOOLS_EXTENSION
             SamSequenceConstIterator refI = header.Sequences.ConstFind(old_refs[i].RefName);
             if (refI == header.Sequences.ConstEnd()) {
-                cerr << NAME << "[pass2] internal header inconsistency, " << old_refs[i].RefName 
+                cerr << NAME << "[pass2] internal error, " << old_refs[i].RefName 
                     << " not found in the input header" << endl;
                 return EXIT_FAILURE;
             }
@@ -344,53 +410,49 @@ yoruba::main_gbagbe(int argc, char* argv[])
             const SamSequence& existing_ref = header.Sequences[old_refs[i].RefName];
 #endif
             new_header.Sequences.Add(existing_ref);
-            refs_used[i] = new_RefID;  // entry now contains new reference ID
-            ++new_RefID;
-
-        } else if (! bed_map.empty() && bed_map.find(old_refs[i].RefName) != bed_map.end()) {
-            // the reference was mentioned in the BED file
-            ++n_refs_added_by_name;
-            new_refs.push_back(old_refs[i]);
-#ifdef _BAMTOOLS_EXTENSION
-            SamSequenceConstIterator refI = header.Sequences.ConstFind(old_refs[i].RefName);
-            if (refI == header.Sequences.ConstEnd()) {
-                cerr << NAME << "[pass2] internal header inconsistency, " << old_refs[i].RefName 
-                    << " not found in the input header" << endl;
-                return EXIT_FAILURE;
-            }
-            const SamSequence& existing_ref = (*refI);
-#else
-            const SamSequence& existing_ref = header.Sequences[old_refs[i].RefName];
-#endif
-            new_header.Sequences.Add(existing_ref);
-            refs_used[i] = new_RefID;  // entry now contains new reference ID
+            refs_mentioned[i] = new_RefID;  // entry now contains new reference ID
             ++new_RefID;
 
         } else {
-            refs_used[i] = -1;
+            if (refs_mentioned_mate[i]) {
+                ++n_refs_mate_not_kept;
+                if (! usage_file.empty()) 
+                    refs_stats[i].no_mate = true;
+            }
+            refs_mentioned[i] = -1;
         }
+        if (! usage_file.empty())
+            refs_stats[i].new_id = refs_mentioned[i];
     }
     assert(new_refs.size() == (size_t)new_RefID);
 
     if (true || opt_progress || DEBUG(1)) {
-        cerr << NAME << "[pass2] " << new_RefID << " reference"
-            << (new_RefID == 1 ? "" : "s") << " in the output BAM" << endl;
-        if (! list_file.empty() || n_refs_added_by_name) {
-            cerr << NAME << "[pass2] " << n_refs_added_by_name << " reference"
-                << (n_refs_added_by_name == 1 ? "" : "s") 
-                << " were kept solely by name";
+        cerr << NAME << "[pass2] " << new_RefID 
+            << " references kept in the output BAM" << endl;
+        if (n_refs_mention)
+            cerr << NAME << "[pass2] " << n_refs_mention
+                << " references were mentioned by mapped reads" << endl;
+        if (n_refs_mate)
+            cerr << NAME << "[pass2] " << n_refs_mate
+                << " additional references were mentioned by mapped mates" << endl;
+        if (! list_file.empty() || n_refs_name) {
+            cerr << NAME << "[pass2] " << n_refs_name 
+                << " additional references were kept by name";
             if (! list_file.empty())
-                cerr << " (out of " << bed_map.size() << " named in " << list_file << ")";
+                cerr << " (out of " << name_map.size() << " named in " << list_file << ")";
             cerr << endl;
         }
+        if (n_refs_mate_not_kept)
+            cerr << NAME << "[pass2] " << n_refs_mate_not_kept
+                << " references were mentioned by mapped mates but not kept (--no-mate)" << endl;
     }
 
-    IF_DEBUG(1) {
+    IF_DEBUG(2) {
         for (size_t i = 0; i < new_refs.size(); ++i) {
             cerr << NAME << "[pass2] " << i << "] SN:" << new_refs[i].RefName
                 << "  LN:" << new_refs[i].RefLength << endl;
         }
-        IF_DEBUG(2) {
+        IF_DEBUG(3) {
             SamSequenceConstIterator sscI = new_header.Sequences.ConstBegin();
             if (sscI == new_header.Sequences.ConstEnd()) {
                 cerr << NAME "[pass2] no entries in new_header.Sequences" << endl;
@@ -400,6 +462,30 @@ yoruba::main_gbagbe(int argc, char* argv[])
                         << "  RefLength=" << sscI->Length << endl;
             }
         }
+    }
+
+    if (! usage_file.empty()) {
+        ofstream usage_stream(usage_file.c_str());
+        usage_stream << "ref" << sep << "input_id" << sep << "m_read" << sep << "m_mate" 
+            << sep << "m_name" << sep << "no_mate" << sep << "output_id" << endl;
+        for (size_t i = 0; i < refs_stats.size(); ++i) {
+            usage_stream << refs_stats[i].ref;
+            usage_stream << sep << refs_stats[i].old_id;
+            usage_stream << sep << refs_stats[i].m_read;
+            usage_stream << sep << refs_stats[i].m_mate;
+            usage_stream << sep << refs_stats[i].m_name;
+            usage_stream << sep << refs_stats[i].no_mate;
+            usage_stream << sep << refs_stats[i].new_id;
+            usage_stream << endl;
+        }
+        usage_stream.close();
+        cerr << NAME << " per-reference usage in " << usage_file << " (--usage-file)" << endl;
+    }
+
+    if (opt_usageonly) {
+	    reader.Close();
+        cerr << NAME << " no output BAM produced (--usage-only)" << endl;
+	    return EXIT_SUCCESS;
     }
 
 
@@ -419,11 +505,6 @@ yoruba::main_gbagbe(int argc, char* argv[])
         cerr << NAME << " could not open output " << output_file << endl;
         return EXIT_FAILURE;
     }
-    if (false) {
-        reader.Close();
-        writer.Close();
-        return EXIT_FAILURE;
-    }
 
     int64_t n_reads_pass1 = n_reads;
     n_reads = 0;
@@ -438,41 +519,47 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
         if (al.IsMapped()) {
             assert(al.RefID >= 0);  // it was valid before...
-            if (al.RefID != refs_used[al.RefID]) {  // the reference ID is different
-                ++n_reads_rerefd;
+            if (al.RefID != refs_mentioned[al.RefID]) {  // the reference ID is different
+                ++n_reads_rerefd;  // strictly rereferenced
                 if (al.IsPaired()) {
                     if (al.MateRefID == al.RefID
-                        || (opt_mate && al.MateRefID >= 0)) {
+                        || refs_mentioned[al.MateRefID] >= 0) {
                         // update the mate RefID
-                        al.MateRefID = refs_used[al.MateRefID];
+                        al.MateRefID = refs_mentioned[al.MateRefID];
                     } else if (al.IsMateMapped()) {
                         // mate ref is now unavailable
                         al.MateRefID = -1;
                         ++n_mates_derefd;
                     }
                 }
-                al.RefID = refs_used[al.RefID];
+                al.RefID = refs_mentioned[al.RefID];
                 assert(al.RefID >= 0);  // and it is valid after
             }
         }
 
         writer.SaveAlignment(al);
 
-        if (opt_progress && n_reads % opt_progress == 0)
-            cerr << NAME << "[pass2] " << n_reads << " reads examined, " 
-                << n_reads_rerefd << " reads rereferenced, "
-                << n_mates_derefd << " mates dereferenced" << endl;
+        if (opt_progress && n_reads % opt_progress == 0) {
+            cerr << NAME << "[pass2] " << n_reads << " reads rereferenced";
+            // cerr << ", " << n_reads_rerefd << " reads strictly rereferenced"
+            if (! opt_mate)
+                cerr << ", "<< n_mates_derefd << " mates dereferenced";
+            cerr << "..." << endl;
+        }
  
 	}
-    if (true || opt_progress || DEBUG(1))
-        cerr << NAME << "[pass2] " << n_reads << " reads examined, " 
-            << n_reads_rerefd << " reads rereferenced, "
-            << n_mates_derefd << " mates dereferenced" << endl;
+    if (true || opt_progress || DEBUG(1)) {
+        cerr << NAME << "[pass2] " << n_reads << " reads rereferenced";
+        // cerr << ", " << n_reads_rerefd << " reads strictly rereferenced"
+        if (! opt_mate)
+            cerr << ", "<< n_mates_derefd << " mates dereferenced";
+        cerr << endl;
+    }
     assert(n_reads == n_reads_pass1);
 
 	reader.Close();
 	writer.Close();
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 

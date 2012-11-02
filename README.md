@@ -71,10 +71,30 @@ With the `--no-mate` option, these references mentioned only for mates will be
 forgotten, and the reference sequence ID for the mate will be changed to `-1`,
 indicating a missing reference sequence description.
 
+With the `--usage-only` option, reference sequence usage is examined in all
+reads and all options are applied toward determining the final reference
+sequence set, but no output BAM file is produced.  The `--output` option is
+ignored.  One possible use of this option is to determine the number of mate
+mappings that are lost by restricting the set of reference sequences.
+
+With the `--usage-file` option, which does **not** imply `--usage-only`, a
+report of reference mentions is written to *FILE*, containing seven columns for
+each reference in the input BAM: (1) *ref*, the reference name; (2) *input_id*,
+the input reference ID; (3) *m_read*, the number of mentions of the reference
+by reads; (4) *m_mate*, the number of mentions of the reference by mates of
+reads; (5) *m_name*, 1 if the reference is mentioned by name (`--list`), 0
+otherwise; (6) *no_mate*, 1 if the reference was mentioned only by a mate and
+was excluded from the output (`--no-mate`), 0 otherwise; and (7) *output_id*,
+the output reference ID.  The final line (reference name `*`) lists totals for
+mapped reads/mates missing their reference sequence in the input (input
+reference ID is -1).
+
 
 | Option                            | Description |
 |-----------------------------------|-------------|
 | `--no-mate`                       | forget references for mates of aligned reads |
+| `--usage-only`                    | analyze reference usage, do not produce output BAM |
+| `--usage-file` *FILE*             | write details of per-reference usage to *FILE* |
 | `-L` *FILE* or `--list` *FILE*    | list of reference sequences to keep (names or BED) |
 | `-o` *FILE* or `--output` *FILE*  | output file name [default is stdout] |
 | `-?` or `--help`                  | longer help |
