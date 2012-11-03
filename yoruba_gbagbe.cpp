@@ -108,7 +108,7 @@ as the first field.\n\
 Options: --no-mate                 also forget references for paired-end mates\n\
          --usage-only              analyze reference usage, do not produce output BAM\n\
          --usage-file FILE         write per-reference usage details to FILE\n\
-         -L FILE | --list FILE     list of reference sequences to keep (names or BED)\n\
+         -L FILE | --list FILE     file containing names of reference sequences to keep\n\
          -o FILE | --output FILE   output file name [default is stdout]\n\
          -? | --help               longer help\n\
 \n";

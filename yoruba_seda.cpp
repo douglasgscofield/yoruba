@@ -37,6 +37,7 @@ static bool         opt_remove;         // set with --remove
 static bool         opt_duplicatefile;  // set with --duplicate-file FILE
 static string       duplicate_file;     // set with --duplicate-file FILE, holds FILE
 #ifdef _WITH_DEBUG
+static bool         opt_override = false;
 static int32_t      opt_debug = 1;
 static int32_t      debug_progress = 100000;
 static int64_t      opt_reads = -1;
@@ -91,6 +92,8 @@ Options: --as-single-end           all reads treated as single-end, ignore pairi
          --debug INT      debug info level INT [" << opt_debug << "]\n\
          --reads INT      only process INT reads [" << opt_reads << "]\n\
          --progress INT   print reads processed mod INT [" << opt_progress << "]\n\
+\n\
+         --override       override the non-usage of this command\n\
 \n";
 #endif
     cerr << "Seda is the Yoruba (Nigeria) verb for 'to copy'." << endl;
@@ -152,7 +155,7 @@ yoruba::main_seda(int argc, char* argv[])
     enum { OPT_output, OPT_as_single, OPT_single_only, OPT_paired_only,
         OPT_remove, OPT_duplicatefile,
 #ifdef _WITH_DEBUG
-        OPT_debug, OPT_reads, OPT_progress,
+        OPT_debug, OPT_reads, OPT_progress, OPT_override,
 #endif
         OPT_help };
 
@@ -170,6 +173,7 @@ yoruba::main_seda(int argc, char* argv[])
         { OPT_debug,           "--debug",           SO_REQ_SEP },
         { OPT_reads,           "--reads",           SO_REQ_SEP },
         { OPT_progress,        "--progress",        SO_REQ_SEP },
+        { OPT_override,        "--override",        SO_NONE },
 #endif
         SO_END_OF_OPTIONS
     };
@@ -202,6 +206,8 @@ yoruba::main_seda(int argc, char* argv[])
             opt_reads = strtoll(args.OptionArg(), NULL, 10);
         } else if (args.OptionId() == OPT_progress) {
             opt_progress = args.OptionArg() ? strtoll(args.OptionArg(), NULL, 10) : opt_progress;
+        } else if (args.OptionId() == OPT_override) {
+            opt_override = true;
 #endif  // end debug options
         } else {
             cerr << NAME << " unprocessed argument '" << args.OptionText() << "'" << endl;
@@ -226,6 +232,11 @@ yoruba::main_seda(int argc, char* argv[])
     // set up output; if file not specified, use stdout or its equivalent
     if (output_file.empty())
         output_file = "/dev/stdout";
+
+    if (! opt_override) {
+        cerr << NAME << " *** this command is not yet ready for general use ***" << endl;
+        return usage();
+    }
 
 
     // in this map, key is a read name, value is true if read paired, false if

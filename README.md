@@ -296,6 +296,7 @@ command invokes this function.  At most one input BAM file is allowed.
 | `--debug` *INT*            | debug info level *INT* [1]
 | `--reads` *INT*            | only process *INT* reads (-1 = all) [-1]
 | `--progress` *INT*         | print reads processed mod *INT* [100000]
+| `--override`               | override the non-usage of this command
 
 In the options table, *INT* indicates an integer value, and *FILE* indicates a filename.
 
