@@ -14,15 +14,15 @@
 //
 // Uses BamTools C++ API for handling BAM files
 
-
 // CHANGELOG
 //
 //
 //
 // TODO
-// --- is immediate EXIT_FAILURE the appropriate response to missing a
-//     reference sequence on the input (al.RefID == -1)?
-// --- add --usage-file
+// --- deal with references mentioned in multiple-mapping and other tags
+// --- much more robust --list file reading (eg find/create a class for reading delimited files)
+// xxx add --usage-file
+// xxx more usefully handle a missing reference sequence in the input (al.RefID == -1)
 // xxx implement mention-by-name
 // xxx clean up mention-by-mates (currently doing message output)
 // xxx add --usage
@@ -35,11 +35,11 @@ using namespace BamTools;
 using namespace yoruba;
 
 static string       input_file;
-static string       output_file;  // defaults to stdout, set with -o FILE
-static bool         opt_usageonly = false; // with --usage-only, do not produce output BAM
-static string       usage_file; // write per-reference usage to FILE, does not imply --usage-only
-static bool         opt_mate = true; // with --no-mate, forget references for mates too
-static string       list_file; // --list file (bed or simply a list) containing references to keep
+static string       output_file;
+static bool         opt_usageonly = false;
+static string       usage_file;
+static bool         opt_mate = true;
+static string       list_file;
 #ifdef _WITH_DEBUG
 static int32_t      opt_debug = 0;
 static int32_t      debug_progress = 100000;
@@ -77,11 +77,14 @@ usage(bool longer = false)
     cerr << endl;
     cerr << "Usage:   " << YORUBA_NAME << " forget [options] <in.bam>" << endl;
     cerr << "         " << YORUBA_NAME << " gbagbe [options] <in.bam>" << endl;
-    cerr << endl;
-    cerr << "Either command invokes this function." << endl;
-    cerr << endl;
-    cerr << "\
-Dynamically reduces the number of reference sequences in <in.bam>.\n\
+    cerr << "\n\
+Dynamically reduce the number of reference sequences in <in.bam>.\n\
+Either command invokes this function.\n\
+\n\
+NOTE: This command does not adjust reference sequence mentioned within tags.\n\
+      There are some de facto standards for these mentions, for example bwa\n\
+      with multiply-mapped reads, and this command will handle these as I\n\
+      learn of them and have time to implement them.\n\
 \n";
     if (longer) cerr << "\
 Alignments within a BAM file mention reference sequences.  The BAM header may\n\
@@ -198,7 +201,7 @@ yoruba::main_gbagbe(int argc, char* argv[])
             opt_reads = strtoll(args.OptionArg(), NULL, 10);
         } else if (args.OptionId() == OPT_progress) {
             opt_progress = args.OptionArg() ? strtoll(args.OptionArg(), NULL, 10) : opt_progress;
-#endif  // end debug options
+#endif
         } else {
             cerr << NAME << " unprocessed argument '" << args.OptionText() << "'" << endl;
             return EXIT_FAILURE;
@@ -225,11 +228,12 @@ yoruba::main_gbagbe(int argc, char* argv[])
     }
 
 
-    //----------------- If --list option used, open file and read in list of references
+    //----------------- If --list option used, open file and read in list of references.
 
     //typedef std::tr1::unordered_map<string, int32_t> bedMap;
     typedef std::tr1::unordered_map<string, bool> nameMap;
     nameMap name_map;
+    // I can do much better than this...
     if (! list_file.empty()) {
         if (opt_progress || DEBUG(1))
             cerr << NAME << "[pass1] reading reference sequence names from "
@@ -327,11 +331,10 @@ yoruba::main_gbagbe(int argc, char* argv[])
                 ++n_unref_mentioned;
                 // cerr << NAME << "[pass1] missing reference sequence from input bam" << endl;
                 // return EXIT_FAILURE;
+            } else {
+                ++refs_mentioned[al.RefID];
             }
-            ++refs_mentioned[al.RefID];
         }
-        // we should track referenced mentioned in mates regardless of opt_mate
-        //if (opt_mate && al.IsPaired() && al.IsMateMapped() && al.MateRefID >= 0) {
         if (al.IsPaired() && al.IsMateMapped() && al.MateRefID >= 0) {
             // an unmapped mate has our RefID and Position, so not a reference "use"
             ++refs_mentioned_mate[al.MateRefID];
@@ -339,6 +342,7 @@ yoruba::main_gbagbe(int argc, char* argv[])
             // if a reference is missing for a mapped mate then MateRefID == -1,
             ++n_unref_mentioned_mate;
         }
+        // FIXME handle at least a subset of reference mentions within tags
 
         if ((opt_progress || DEBUG(1)) && n_reads % opt_progress == 0)
             cerr << NAME << "[pass1] " << n_reads << " reads examined..." << endl;
@@ -353,13 +357,12 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
     const RefVector& old_refs = reader.GetReferenceData();
     RefVector        new_refs;
-    int32_t n_refs_mention = 0;
-    int32_t n_refs_mate = 0;
-    int32_t n_refs_mate_not_kept = 0;
-    int32_t n_refs_name = 0;
+    int32_t          n_refs_mention = 0;
+    int32_t          n_refs_mate = 0;
+    int32_t          n_refs_mate_not_kept = 0;
+    int32_t          n_refs_name = 0;
 
-    // gather data for --usage-file report, but don't allocate vector if not needed
-    vector<refStats> refs_stats;
+    vector<refStats> refs_stats; // don't allocate vector if not needed
     if (! usage_file.empty()) {
         refs_stats.resize(reader.GetReferenceCount() + 1);
         size_t i_unref = refs_stats.size() - 1;  // last entry, for mentions of ref -1
@@ -541,7 +544,6 @@ yoruba::main_gbagbe(int argc, char* argv[])
 
         if (opt_progress && n_reads % opt_progress == 0) {
             cerr << NAME << "[pass2] " << n_reads << " reads rereferenced";
-            // cerr << ", " << n_reads_rerefd << " reads strictly rereferenced"
             if (! opt_mate)
                 cerr << ", "<< n_mates_derefd << " mates dereferenced";
             cerr << "..." << endl;
@@ -550,7 +552,6 @@ yoruba::main_gbagbe(int argc, char* argv[])
 	}
     if (true || opt_progress || DEBUG(1)) {
         cerr << NAME << "[pass2] " << n_reads << " reads rereferenced";
-        // cerr << ", " << n_reads_rerefd << " reads strictly rereferenced"
         if (! opt_mate)
             cerr << ", "<< n_mates_derefd << " mates dereferenced";
         cerr << endl;

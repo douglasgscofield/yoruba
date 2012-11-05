@@ -9,16 +9,10 @@
 //
 // Uses BamTools C++ API for handling BAM files
 
-
 // CHANGELOG
 //
-//
-//
-// TODO
-//
-// Update README.md
-// Update with options
-//
+// --- Add option to dump tags
+// --- Add options to dump sequence, aligned sequence, qualities?
 
 #include "yoruba_inu.h"
 
@@ -60,20 +54,18 @@ static int
 usage()
 {
     cerr << endl;
-    cerr << "Usage:   " << YORUBA_NAME << " inside [options] <in.bam>" << endl;
-    cerr << "         " << YORUBA_NAME << " inu [options] <in.bam>" << endl;
-    cerr << endl;
-    cerr << "Either command invokes this function." << endl;
-    cerr << endl;
     cerr << "\
-Summarizes the contents of the BAM file <in.bam>.\n\
+Usage:   " << YORUBA_NAME << " inside [options] <in.bam>\n\
+         " << YORUBA_NAME << " inu [options] <in.bam>\n\
+\n\
+Summarizes the contents of the BAM file <in.bam>.  Either command\n\
+invokes this function.\n\
 \n\
 Output includes:\n\
    (1) header lines exclusive of reference sequences\n\
    (2) the first " << opt_refs_to_report << " reference sequences\n\
    (3) mapping characteristics of the first " << opt_reads_to_report << " reads\n\
-\n";
-    cerr << "\
+\n\
 Options: --reads-to-report INT   print this many reads [" << opt_reads_to_report << "]\n\
          --refs-to-report INT    print this many references [" << opt_refs_to_report << "]\n\
          --continue              continue counting reads until the end of the BAM\n\
@@ -163,7 +155,7 @@ yoruba::main_inu(int argc, char* argv[])
         return usage();
     } else if (args.FileCount() == 1) {
         input_file = args.File(0);
-    } else if (input_file.empty()) {  // don't replace if not empty, a defauult is set
+    } else if (input_file.empty()) {
         input_file = "/dev/stdin";
     }
 

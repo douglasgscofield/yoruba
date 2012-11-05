@@ -45,6 +45,10 @@ Dynamically reduces the number of reference sequences in a BAM file.  *Gbagbe*
 is the Yoruba (Nigeria) verb for 'to forget'.  Either command invokes this
 function.  At most one input BAM file is allowed.
 
+* **NOTE: `forget` does not adjust reference sequence mentioned within tags. There
+  are some de facto standards for these mentions, for example `bwa` with
+  multiply-mapped reads, and `forget` will handle these as I learn of them.**
+
 `yoruba gbagbe` will remove reference sequence descriptions from the BAM header
 (@SQ lines) that are not mentioned by alignments in the BAM file.  This can be
 particularly helpful when a BAM containing a subset of reads from a larger BAM
@@ -56,7 +60,8 @@ take a while to load...
 
 `yoruba gbagbe` makes two passes over the BAM file, the first to determine
 which reference sequences are mentioned, and the second to write the output
-BAM.
+BAM.  If the `--usage-only` option is provided, the second pass is skipped
+(see below).
 
 A list of reference sequences to keep regardless of whether they are referred
 to can be provided with the `--list` option.  The file can be in BED format, as
@@ -77,7 +82,7 @@ sequence set, but no output BAM file is produced.  The `--output` option is
 ignored.  One possible use of this option is to determine the number of mate
 mappings that are lost by restricting the set of reference sequences.
 
-With the `--usage-file` option, which does **not** imply `--usage-only`, a
+With the `--usage-file` option, which does not imply `--usage-only`, a
 report of reference mentions is written to *FILE*, containing seven columns for
 each reference in the input BAM: (1) *ref*, the reference name; (2) *input_id*,
 the input reference ID; (3) *m_read*, the number of mentions of the reference
@@ -132,8 +137,8 @@ in the SAM definition (<http://samtools.sourceforge.net/SAM1.pdf>):
    
 5. *comment lines* (`@CO`) which are individual text lines
 
-6. finally, *reads*, which may be aligned or unaligned; neither read sequences
-   nor base-specific qualities are printed
+6. finally, *reads*, which may be aligned or unaligned; not printed (for the
+   moment) are read sequences, base-specific qualities, and additional tags
 
 
 | Option                     | Description |

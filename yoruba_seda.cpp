@@ -67,16 +67,14 @@ static int
 usage()
 {
     cerr << endl;
-    cerr << "Usage:   " << YORUBA_NAME << " duplicate [options] <in.bam>" << endl;
-    cerr << "         " << YORUBA_NAME << " seda      [options] <in.bam>" << endl;
-    cerr << endl;
-    cerr << "Either command invokes this function." << endl;
-    cerr << endl;
     cerr << "\
-Determines duplicate reads in a BAM file, marks them as duplicates, and removes\n\
-them on option.\n\
+Usage:   " << YORUBA_NAME << " duplicate [options] <in.bam>\n\
+         " << YORUBA_NAME << " seda      [options] <in.bam>\n\
 \n\
-NOTE: THIS COMMAND IS INCOMPLETE, DO NOT USE\n\
+Determines duplicate reads in a BAM file, marks them as duplicates, and removes\n\
+them on option.  Either command invokes this function.\n\
+\n\
+NOTE: THIS COMMAND IS INCOMPLETE AND IN AN UNKNOWN STATE OF READINESS\n\
 \n\
 Options: --as-single-end           all reads treated as single-end, ignore pairing\n\
          --single-end-only         only look for duplicates in single-end reads\n\
@@ -110,18 +108,17 @@ typedef list<BamAlignment>            alignmentList;
 typedef alignmentList::iterator       alignmentListI;
 typedef alignmentList::const_iterator alignmentListCI;
 
-enum dup_t { dupMap_singleend = -1, dupMap_UNSET = 0, 
-    dupMap_paired_one = 1, dupMap_paired_both = 2 };
+enum dup_t { // types of potential duplicate reads in a dupMap
+    dupMap_singleend   = -1, 
+    dupMap_UNSET       = 0, 
+    dupMap_paired_one  = 1, 
+    dupMap_paired_both = 2
+};
 //typedef map<string, dup_t>            dupMap;
 typedef std::tr1::unordered_map<string, dup_t>  dupMap;
 typedef dupMap::iterator              dupMapI;
 typedef dupMap::const_iterator        dupMapCI;
-
-// local functions, will soon create class out of dupMap
-static void listAlignments(const alignmentList& al_set);
-static bool isDuplicate(const BamAlignment& al_i, const BamAlignment& al_j);
-static void diagnoseDuplicate(const BamAlignment& al_i, const BamAlignment& al_j);
-static void determineDuplicates(alignmentList& al_set, alignmentList& al_dups);
+// must create class out of dupMap
 static void dump_dupMap(const dupMap& this_dm);
 static void update_dupMap(alignmentList& al_set, dupMap& this_dm);
 static void query_dupMap(const dupMap& this_dm);
@@ -129,6 +126,12 @@ static void clear_dupMap(dupMap& this_dm);
 static void clear_dupMap(dupMap& this_dm, dup_t val);
 // a member for the class, to get stats for last update of the dupMap
 // static void querylastupdate_dupMap(const dupMap& this_dm);
+
+// local functions
+static void listAlignments(const alignmentList& al_set);
+static bool isDuplicate(const BamAlignment& al_i, const BamAlignment& al_j);
+static void diagnoseDuplicate(const BamAlignment& al_i, const BamAlignment& al_j);
+static void determineDuplicates(alignmentList& al_set, alignmentList& al_dups);
 
 //-------------------------------------
 
@@ -208,7 +211,7 @@ yoruba::main_seda(int argc, char* argv[])
             opt_progress = args.OptionArg() ? strtoll(args.OptionArg(), NULL, 10) : opt_progress;
         } else if (args.OptionId() == OPT_override) {
             opt_override = true;
-#endif  // end debug options
+#endif
         } else {
             cerr << NAME << " unprocessed argument '" << args.OptionText() << "'" << endl;
             return EXIT_FAILURE;
@@ -229,7 +232,6 @@ yoruba::main_seda(int argc, char* argv[])
         input_file = "/dev/stdin";
     }
 
-    // set up output; if file not specified, use stdout or its equivalent
     if (output_file.empty())
         output_file = "/dev/stdout";
 
@@ -239,8 +241,8 @@ yoruba::main_seda(int argc, char* argv[])
     }
 
 
-    // in this map, key is a read name, value is true if read paired, false if
-    // single-end 
+    // in this map, key is a read name, value is dup_t depending on state of
+    // duplicate determination
     //
     // on pass 1, if a read name is in this map, then it is either a known
     // duplicate (single-end with val = false) or it is an unmated read of a
@@ -291,11 +293,11 @@ yoruba::main_seda(int argc, char* argv[])
 
     dupMap dup_map;
 
-    int64_t n_reads = 0;  // number of reads processed
-    int64_t n_reads_pass1 = 0;  // number of reads processed
-    int64_t n_reads_written_to_output = 0;  // number of reads written to output BAM
-    int64_t n_reads_written_to_dups = 0;  // number of reads written to duplicates BAM
-    int64_t n_reads_removed = 0;  // number of reads removed from output BAM
+    int64_t n_reads = 0;
+    int64_t n_reads_pass1 = 0;
+    int64_t n_reads_written_to_output = 0;
+    int64_t n_reads_written_to_dups = 0;
+    int64_t n_reads_removed = 0;
 
 	BamAlignment al;  // holds the current read from the BAM file
 
@@ -310,13 +312,15 @@ yoruba::main_seda(int argc, char* argv[])
         last_RefID = al.RefID;
         last_Position = al.Position;
         ++n_reads;
-        IF_DEBUG(3) cerr << "beginning with " << al_set.size() << " alignments, al.RefID = " 
-            << al.RefID << " al.Position = " << al.Position << endl;
+        IF_DEBUG(3) 
+            cerr << "beginning with " << al_set.size() << " alignments, al.RefID = " 
+                << al.RefID << " al.Position = " << al.Position << endl;
     }
 
 	while (! al_set.empty() && (opt_reads < 0 || n_reads < opt_reads)) {
 
-        IF_DEBUG(3) cerr << al_set.size() << " alignments at start of alignment-reading loop" << endl;
+        IF_DEBUG(3) 
+            cerr << al_set.size() << " alignments at start of alignment-reading loop" << endl;
 
         bool al_remaining;
 
@@ -324,19 +328,22 @@ yoruba::main_seda(int argc, char* argv[])
                 && al.RefID == last_RefID 
                 && al.Position == last_Position ) {
             al_set.push_back(al);
-            IF_DEBUG(3) cerr << al_set.size() << " alignments, al.RefID = " << al.RefID 
+            IF_DEBUG(3) 
+                cerr << al_set.size() << " alignments, al.RefID = " << al.RefID 
                     << " al.Position = " << al.Position << endl;
             ++n_reads;
         }
 
         if (al_remaining && ! isCoordinateSorted(al.RefID, al.Position, last_RefID, last_Position)) {
-            cerr << NAME << " input is not coordinate-sorted, " << al.Name << " out of position" << endl;
+            cerr << NAME << " input is not coordinate-sorted, " << al.Name 
+                << " out of position" << endl;
             return EXIT_FAILURE;
         }
 
         // all alignments in al_set share RefID and Position
 
-        IF_DEBUG(2) cerr << "read " << al_set.size() << " alignments at Ref = " << last_RefID 
+        IF_DEBUG(2) 
+            cerr << "read " << al_set.size() << " alignments at Ref = " << last_RefID 
                 << " Pos = " << last_Position << endl;
 
         if (al_set.size() > 1) {
@@ -458,7 +465,8 @@ yoruba::main_seda(int argc, char* argv[])
                 << " decremented " << n_dupMap_entries_decremented << " PE halves" << endl;
         if ((opt_progress || DEBUG(1)) && n_reads % opt_progress == 0) 
             cerr << NAME << "[pass2] "
-                << n_reads << " reads seen, last at RefID = " << al.RefID << " Pos = " << al.Position << ", "
+                << n_reads << " reads seen, last at RefID = " << al.RefID 
+                << " Pos = " << al.Position << ", "
                 << n_reads_written_to_output << " written to " << output_file << ", "
                 << n_reads_written_to_dups << " written to " << duplicate_file << ", "
                 << n_reads_removed << " removed" << endl;
@@ -651,13 +659,16 @@ isDuplicate(const BamAlignment& al_i, const BamAlignment& al_j)
 {
     const string HERE = "isDuplicate():";
     string i_tag, j_tag;
-    // we already know that these alignments are mapped, and to the same reference at the same position
-    if (   al_j.RefID                 == al_i.RefID        // same reference
-        && al_j.Position              == al_i.Position     // same position
-        && al_j.IsReverseStrand()     == al_i.IsReverseStrand()   // same orientation
-        && al_j.GetTag("RG", j_tag)   == al_i.GetTag("RG", i_tag)  // has a RG tag?
-        && j_tag                      == i_tag             // RG tag is the same?
-        && (opt_detect == DETECT_as_single  // ignore pair-dependent qualities with --as-single-end
+
+    // we already know that these alignments are mapped, and 
+    // to the same reference at the same position
+
+    if (   al_j.RefID               == al_i.RefID        // same reference
+        && al_j.Position            == al_i.Position     // same position
+        && al_j.IsReverseStrand()   == al_i.IsReverseStrand()   // same orientation
+        && al_j.GetTag("RG", j_tag) == al_i.GetTag("RG", i_tag)  // has a RG tag?
+        && j_tag                    == i_tag             // RG tag is the same?
+        && (opt_detect == DETECT_as_single  // ignore pair stuff with --as-single-end
            || (   al_j.IsPaired()            == al_i.IsPaired()     // same pairing
                && al_j.MateRefID             == al_i.MateRefID      // mates mapped to same sequence
                && al_j.MatePosition          == al_i.MatePosition // mates mapped to same position
@@ -666,9 +677,14 @@ isDuplicate(const BamAlignment& al_i, const BamAlignment& al_j)
         && al_j.AlignedBases.length() == al_i.AlignedBases.length() // same alignment length
         // need to include some notion of optical distance?
         ) {
-        IF_DEBUG(2) cerr << HERE << " " << al_j.Name << " is a duplicate of " << al_i.Name << endl;
+
+        IF_DEBUG(2) 
+            cerr << HERE << " " << al_j.Name << " is a duplicate of " << al_i.Name << endl;
+
         return true;
+
     }
+
     return false;
 }
 
@@ -684,7 +700,10 @@ diagnoseDuplicate(const BamAlignment& al_i, const BamAlignment& al_j)
     printAlignmentInfo(cerr, al_i, 99);
     printAlignmentInfo(cerr, al_j, 99);
     string i_tag, j_tag;
-    // we already know that these alignments are mapped, and to the same reference at the same position
+
+    // we already know that these alignments are mapped, and 
+    // to the same reference at the same position
+
     if (al_j.RefID != al_i.RefID)
         { cerr << HERE << " mismatch RefID" << endl; return; }
     if (al_j.Position != al_i.Position)
@@ -894,4 +913,6 @@ clear_dupMap(dupMap& this_dm, dup_t val)
         << " size at exit: " << this_dm.size() << endl;
 }
 
+
+//-------------------------------------
 

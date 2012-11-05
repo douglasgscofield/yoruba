@@ -60,15 +60,15 @@ static int
 usage(bool long_help = false)
 {
     cerr << endl;
-    cerr << "Usage:   " << YORUBA_NAME << " readgroup [options] <in.bam>" << endl;
-    cerr << "         " << YORUBA_NAME << " kojopodipo [options] <in.bam>" << endl;
-    cerr << endl;
-    cerr << "Either command invokes this function." << endl;
-    cerr << endl;
+    cerr << "\
+Usage:   " << YORUBA_NAME << " readgroup [options] <in.bam>\n\
+         " << YORUBA_NAME << " kojopodipo [options] <in.bam>\n\
+\n\
+Add or replace read group information in the BAM file <in.bam>.  Either\n\
+command invokes this function.\n\
+\n";
     if (long_help) {
     cerr << "\
-Add or replace read group information in the BAM file <in.bam>.\n\
-\n\
 Read group information appears in two places in the BAM file:\n\
    (1) the read group dictionary, found in the header, which contains the \n\
        read group ID and any other information associated with the ID, such \n\
@@ -367,7 +367,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
         }
     }
 
-    if (opt_replace) {  // --replace was given
+    if (opt_replace) {
 
         if (header.ReadGroups.Contains(replace_string)) {
             if (other_rg_opts) {  // more than --ID was given, replace entry and add new one
@@ -477,6 +477,7 @@ yoruba::main_kojopodipo(int argc, char* argv[])
 //-------------------------------------
 
 
+// not a tremendously robust parser
 const SamReadGroupDictionary
 yoruba::parseReadGroupDictionaryString(const string& in)
 {
