@@ -164,7 +164,7 @@ yoruba::main_inu(int argc, char* argv[])
 	BamReader reader;
 
 	if (! reader.Open(input_file)) {
-        cerr << NAME << "could not open BAM input" << endl;
+        cerr << NAME << " could not open BAM input" << endl;
         return EXIT_FAILURE;
     }
 

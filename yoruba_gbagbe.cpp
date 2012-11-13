@@ -267,12 +267,12 @@ yoruba::main_gbagbe(int argc, char* argv[])
         cerr << NAME << "[pass1] opening input BAM and reading references..." << endl;
 
 	if (! reader.Open(input_file)) {
-        cerr << NAME << "could not open BAM input" << endl;
+        cerr << NAME << "[pass1] could not open BAM input" << endl;
         return EXIT_FAILURE;
     }
 
     if (reader.GetReferenceCount() == 0) {
-        cerr << NAME << "no reference sequences found in BAM header" << endl;
+        cerr << NAME << "[pass1] no reference sequences found in BAM header" << endl;
         reader.Close();
         return EXIT_FAILURE;
     }
