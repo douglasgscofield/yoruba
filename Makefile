@@ -5,7 +5,7 @@ BAMTOOLS_LIB_DIR = $(BAMTOOLS_ROOT)/lib
 
 CXX=		g++
 #CXXFLAGS=	-Wall -O3 -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -I$(BAMTOOLS_INCLUDE_DIR)
-CXXFLAGS=	-Wall -g3 -ggdb -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -I$(BAMTOOLS_INCLUDE_DIR) -fno-inline
+CXXFLAGS=	-Wall -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -D_FILE_OFFSET_BITS=64 -I$(BAMTOOLS_INCLUDE_DIR) -ggdb -g3 -fvar-tracking-assignments -fno-inline -fno-inline-small-functions -O0 -fno-eliminate-unused-debug-types
 #CXXFLAGS=	-Wall -pg -g -D_WITH_DEBUG -D_BAMTOOLS_EXTENSION -I$(BAMTOOLS_INCLUDE_DIR)
 
 PROG=		yoruba
