@@ -12,6 +12,37 @@
 //
 //
 // TODO
+
+// --- make a more efficient binning for paired reads.  we need to keep each
+//     *seen* mate, and they are binned according to where we expect the *unseen*
+//     mate to show up.  we can allocate a vector of unordered maps, with each
+//     element of the vector representing one reference sequence (as numbered
+//     according to the BAM header) and the members of each unordered map are
+//     indexed by read name of the seen mate (whatever part of the read pair will
+//     uniquely match between the seen and unseen mate).  alternatively they could
+//     be binned in sequence chunkes (say every 1Mbp)... 
+
+//     you know what, it doesn't matter, when i add a potential duplicate to
+//     dupMap, I should pass in the read name, the read dup info, and the
+//     reference sequence index and leftmpst  position that are encoded in the
+//     seen mate's mapping info.  then dupMap takes care of however that gets
+//     mapped, and however it is all returned.  when we want to check for
+//     mates, we pass in the read name, the reference sequence we are at and
+//     the leftmost position of the mapped read to see of dupMap contains it.
+//     this will be a good spot for double-check of all values.
+//
+//     so dupMap is a class, that has a ctor that takes the reference
+//     information encoded in the bam file, and creates a mapping structure
+//     based on that.
+//
+//     during pass 1, by the end, we know which reads and read pairs are
+//     duplicates.  as we are cleaning up behind ourselves, we destroy the
+//     unordered map for each reference sequence as we finish it.  the reads
+//     that were actual duplicates are added to some presence-only map.  by the
+//     end of pass 1, all the dupMap entries are dtor'd and what we have left
+//     internally is simply a true-if-present collection of read names.  these 
+//     stick around 'til the end because of pairs etc.
+
 // --- implement --as-single-end
 // --- deal with ordering issue and pairs
 // --- double-check the unseen-mates removed issue, make sure it is consistent
