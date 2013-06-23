@@ -12,6 +12,7 @@
 #include <list>
 #include <map>
 #include <tr1/unordered_map>
+#include <new>
 
 // BamTools includes: https://github.com/pezmaster31/bamtools
 #include "api/BamReader.h"
