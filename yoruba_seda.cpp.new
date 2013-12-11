@@ -24,7 +24,7 @@
 
 //     you know what, it doesn't matter, when i add a potential duplicate to
 //     dupMap, I should pass in the read name, the read dup info, and the
-//     reference sequence index and leftmpst  position that are encoded in the
+//     reference sequence index and leftmost  position that are encoded in the
 //     seen mate's mapping info.  then dupMap takes care of however that gets
 //     mapped, and however it is all returned.  when we want to check for
 //     mates, we pass in the read name, the reference sequence we are at and
@@ -102,8 +102,8 @@ usage()
 Usage:   " << YORUBA_NAME << " duplicate [options] <in.bam>\n\
          " << YORUBA_NAME << " seda      [options] <in.bam>\n\
 \n\
-Determines duplicate reads in a BAM file, marks them as duplicates, and removes\n\
-them on option.  Either command invokes this function.\n\
+Determines duplicate reads in a BAM file, marks them as duplicates, and optionally\n\
+removes them.  Either command invokes this function.\n\
 \n\
 NOTE: THIS COMMAND IS INCOMPLETE AND IN AN UNKNOWN STATE OF READINESS\n\
 \n\
@@ -135,9 +135,33 @@ Options: --as-single-end           all reads treated as single-end, ignore pairi
 //-------------------------------------
 
 
-typedef list<BamAlignment>            alignmentList;
-typedef alignmentList::iterator       alignmentListI;
-typedef alignmentList::const_iterator alignmentListCI;
+// the al_list variable: all alignments sharing a ref and pos
+typedef list<BamAlignment>                 alignmentList;
+typedef alignmentList::iterator            alignmentListI;
+typedef alignmentList::const_iterator      alignmentListCI;
+
+// the al_dups variable: list of all actual/potential duplicate sets of
+// alignments at a ref/pos
+typedef list<alignmentList>                alignmentListList;
+typedef alignmentListList::iterator        alignmentListListI;
+typedef alignmentListList::const_iterator  alignmentListListCI;
+
+// the dup_map variable: locations of potential duplicate reads: only contains
+// entries for unmatched mates whose seen mate has already been shown to be
+// potentially duplicated themselves.  key is ref.pos of unmatched mates
+typedef std::tr1::unordered_multimap<string, vector<string> > dupMultimap;
+bool dupMultimap_add(
+
+// the dup_set variable: names of reads to be marked/removed as duplicates. 
+// The first pass fills this in, the second pass queries it to determine which
+// reads to mark as duplicates.
+// TODO: // #ifdef C++11
+// typedef std::unordered_set<string>        readnameSet;
+// #else
+typedef std::tr1::unordered_set<string>    readnameSet;
+// #endif
+typedef readnameSet::iterator              readnameSetI;
+typedef readnameSet::const_iterator        readnameSetCI;
 
 enum dup_t { // types of potential duplicate reads in a dupMap
     dupMap_singleend   = -1, 
@@ -146,12 +170,55 @@ enum dup_t { // types of potential duplicate reads in a dupMap
     dupMap_paired_both = 2
 };
 //typedef map<string, dup_t>            dupMap;
+
+// Duplicate reads are position-dependent, in that only reads that share
+// the same mapped positions can potentially be duplicates.  For a set of
+// reads/read pairs identified as duplicates, one read will not be marked
+// as a duplicate and the rest are marked as duplicates.  The read that
+// is not marked as duplicate is determined arbitrarily.  For now, it is
+// the read with the lexically smallest name.
+//
+// To
+//
+// Read pairs cannot be determined as duplicates until both reads
+// are examined.  A candidate set of duplicates can be determined by
+// examining the mapping of the first read set only, since for each of
+// those that have a mapped mate (which must be true for the set of
+// candidates, unless we examine duplication in unmapped mates which we
+// do not yet).  The first mapped read contains the location and the 
+// leftmost position of the second mapped read.  Candidate duplicates in
+// the first mapped reads will also have duplicate mapping locations for
+// the second mapped read.The set of
+// duplicate reads may be smaller than the set of reads sharing mapped pos
+
+// Allocate an unordered map to hold dup info for potentially duplicate
+// paired-end reads with as-yet-unseen mates.  For read pairs, the first
+// read of a pair is 
+// Usage: if a paired-end read has a mate mapped to an earlier position
+//        and the read name of the pair is defined in the map with 
+//        entry value dupMap_paired_one, then check if the read is a
+//        duplicate
+// key:    read name
+// value:  dup_
+
+// dupCandidates dup_candidates
+//
+// dupSet dup_set
+// typedef std::unordered_set<std::string> dupSet;
+// typdef std::tr1::unordered_set<std::string> dupSet;
+
+// TODO: // #ifdef C++11
+// some appropriate type statement
+// typedef std::unordered_map<string, dup_t>  dupMap;
+// #else
 typedef std::tr1::unordered_map<string, dup_t>  dupMap;
+// #endif
 typedef dupMap::iterator              dupMapI;
 typedef dupMap::const_iterator        dupMapCI;
+
 // must create class out of dupMap
 static void dump_dupMap(const dupMap& this_dm);
-static void update_dupMap(alignmentList& al_set, dupMap& this_dm);
+static void update_dupMap(alignmentList& al_list, dupMap& this_dm);
 static void query_dupMap(const dupMap& this_dm);
 static void clear_dupMap(dupMap& this_dm);
 static void clear_dupMap(dupMap& this_dm, dup_t val);
@@ -160,7 +227,6 @@ static void clear_dupMap(dupMap& this_dm, dup_t val);
 
 class dupMap {
     private:
-        size_t sz;  // the number of bins in the dupmap
         typedef std::tr1::unordered_map<string, dup_t> dupMapBin;
         dupMapBin * the_dupMap;  // will be an allocated array
         // vector<dupMapBin *> * the_dupMap;
@@ -198,10 +264,10 @@ class dupMap {
 
 
 // local functions
-static void listAlignments(const alignmentList& al_set);
+static void listAlignments(const alignmentList& al_list);
 static bool isDuplicate(const BamAlignment& al_i, const BamAlignment& al_j);
 static void diagnoseDuplicate(const BamAlignment& al_i, const BamAlignment& al_j);
-static void determineDuplicates(alignmentList& al_set, alignmentList& al_dups);
+static void determineDuplicates(alignmentList& al_list, alignmentList& al_dups);
 
 //-------------------------------------
 
@@ -372,34 +438,38 @@ yoruba::main_seda(int argc, char* argv[])
 	BamAlignment al;  // holds the current read from the BAM file
 
     // it might be more efficient to manage my own list, std::list<> is fine for now
-    alignmentList al_set;
+    alignmentList al_list;
 
     int32_t last_RefID = -2;
     int32_t last_Position = -1;
 
     if (reader.GetNextAlignment(al)) {
-        al_set.push_back(al);
+        // if there is at least one alignment, stash it, and set last reference and position
+        al_list.push_back(al);
         last_RefID = al.RefID;
         last_Position = al.Position;
         ++n_reads;
         IF_DEBUG(3) 
-            cerr << "beginning with " << al_set.size() << " alignments, al.RefID = " 
+            cerr << "beginning with " << al_list.size() << " alignments, al.RefID = " 
                 << al.RefID << " al.Position = " << al.Position << endl;
     }
 
-	while (! al_set.empty() && (opt_reads < 0 || n_reads < opt_reads)) {
+	while (! al_list.empty() && (opt_reads < 0 || n_reads < opt_reads)) {
 
         IF_DEBUG(3) 
-            cerr << al_set.size() << " alignments at start of alignment-reading loop" << endl;
+            cerr << al_list.size() << " alignments at start of alignment-reading loop" << endl;
 
         bool al_remaining;
+
+        // Gather all reads mapping to this position into al_list, so that
+        // all alignments in al_list share RefID and Position
 
         while ((al_remaining = reader.GetNextAlignment(al)) 
                 && al.RefID == last_RefID 
                 && al.Position == last_Position ) {
-            al_set.push_back(al);
+            al_list.push_back(al);
             IF_DEBUG(3) 
-                cerr << al_set.size() << " alignments, al.RefID = " << al.RefID 
+                cerr << al_list.size() << " alignments, al.RefID = " << al.RefID 
                     << " al.Position = " << al.Position << endl;
             ++n_reads;
         }
@@ -410,29 +480,31 @@ yoruba::main_seda(int argc, char* argv[])
             return EXIT_FAILURE;
         }
 
-        // all alignments in al_set share RefID and Position
-
         IF_DEBUG(2) 
-            cerr << "read " << al_set.size() << " alignments at Ref = " << last_RefID 
+            cerr << "read " << al_list.size() << " alignments at Ref = " << last_RefID 
                 << " Pos = " << last_Position << endl;
 
-        if (al_set.size() > 1) {
+        // al_list may contain no duplicates, or multiple duplicate sets, so 
+        // determineDuplicates() should be able to handle both cases
+        if (al_list.size() > 1) {
             alignmentList al_dups;  // holds duplicates detected
 
-            IF_DEBUG(2) listAlignments(al_set);
-            determineDuplicates(al_set, al_dups);  // which reads here are potential duplicates?
-            assert(al_set.empty());  // still true?
+            IF_DEBUG(2) listAlignments(al_list);
+            determineDuplicates(al_list, al_dups);  // which reads here are potential duplicates?
+            assert(al_list.empty());  // still true?
             update_dupMap(al_dups, dup_map);  // add duplicates to set for pass 2
+            // TODO
+            // dup_map.update(al_dups);
             assert(al_dups.empty());
 
         } else {
 
-            al_set.clear();  // just one read here, no duplicates
+            al_list.clear();  // just one read here, no duplicates
 
         }
 
         if (al_remaining) {
-            al_set.push_back(al);
+            al_list.push_back(al);
             last_RefID = al.RefID;
             last_Position = al.Position;
             ++n_reads;
@@ -457,6 +529,8 @@ yoruba::main_seda(int argc, char* argv[])
     { // clean the map: remove PE reads with unseen mates
         size_t initial_size = dup_map.size();
         clear_dupMap(dup_map, dupMap_paired_one);
+        // TODO
+        // dup_map.clear(dupMap_paired_one)
         size_t n_removed = initial_size - dup_map.size();
         if (n_removed || DEBUG(1))
             cerr << NAME << "[pass1] map size was " << initial_size 
@@ -574,9 +648,9 @@ yoruba::main_seda(int argc, char* argv[])
 
 
 static void
-listAlignments(const alignmentList& al_set)
+listAlignments(const alignmentList& al_list)
 {
-    for (alignmentListCI i = al_set.begin(); i != al_set.end(); ++i) {
+    for (alignmentListCI i = al_list.begin(); i != al_list.end(); ++i) {
         printAlignmentInfo(cerr, (*i), 99);
     }
 }
@@ -586,10 +660,10 @@ listAlignments(const alignmentList& al_set)
 
 
 static void
-determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
+determineDuplicates(alignmentList& al_list, alignmentList& al_dups)
 {
     const string HERE = "determineDuplicates():";
-    size_t initial_size = al_set.size();
+    size_t initial_size = al_list.size();
     IF_DEBUG(2) cerr << HERE << " received " << initial_size << " reads" << endl;
 
     alignmentListI al_i, al_j;
@@ -601,24 +675,24 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
     int n0_unmapped = 0;
     int n0_mate_unmapped = 0;
 
-    al_i = al_set.begin();
-    while (al_i != al_set.end()) {
+    al_i = al_list.begin();
+    while (al_i != al_list.end()) {
         if (opt_detect == DETECT_single_only && al_i->IsPaired()) {
             IF_DEBUG(3) cerr << HERE << " " << al_i->Name << " is paired and --single-only, excluded" << endl;
-            al_i = al_set.erase(al_i); 
+            al_i = al_list.erase(al_i); 
             ++n0_paired_single_only;
         } else if (opt_detect == DETECT_paired_only && ! al_i->IsPaired()) {
             IF_DEBUG(3) cerr << HERE << " " << al_i->Name << " is single and --paired-only, excluded" << endl;
-            al_i = al_set.erase(al_i); 
+            al_i = al_list.erase(al_i); 
             ++n0_single_paired_only;
         } else if (! al_i->IsMapped()) { // no dup if not mapped
             IF_DEBUG(3) cerr << HERE << " " << al_i->Name << " is not mapped, excluded" << endl;
-            al_i = al_set.erase(al_i); 
+            al_i = al_list.erase(al_i); 
             ++n0_unmapped;
         } else if (opt_detect != DETECT_as_single // ignore mate if --as-single-end
                    && al_i->IsPaired() && ! al_i->IsMateMapped()) { // no dup if mate not mapped
             IF_DEBUG(3) cerr << HERE << " " << al_i->Name << " has a mate that is not mapped, excluded" << endl;
-            al_i = al_set.erase(al_i); 
+            al_i = al_list.erase(al_i); 
             ++n0_mate_unmapped;
         } else {
             ++al_i;
@@ -626,8 +700,8 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
     }
 
     IF_DEBUG(2) {
-        if (al_set.size() < initial_size || DEBUG(3)) {
-            cerr << HERE << " done with pass 0, " << al_set.size() << " reads left";
+        if (al_list.size() < initial_size || DEBUG(3)) {
+            cerr << HERE << " done with pass 0, " << al_list.size() << " reads left";
             if (n0_paired_single_only) cerr << ", paired w/ single-only = " << n0_paired_single_only;
             if (n0_single_paired_only) cerr << ", single w/ paired-only = " << n0_single_paired_only;
             if (n0_unmapped) cerr << ", unmapped = " << n0_unmapped;
@@ -636,15 +710,17 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
         }
     }
 
-    if (al_set.empty()) {
+    if (al_list.empty()) {
         return;
     }
 
+    // Starting with the first read, check later reads as dups against it 
+    
     // Starting with first read, check later reads as dups against it, keeping
     // the best.
     // 
-    // If dups are found, we add then to al_dups.  The best read remains in al_set
-    // until the end of its pass, then it is deleted from al_set and *not* added
+    // If dups are found, we add then to al_dups.  The best read remains in al_list
+    // until the end of its pass, then it is deleted from al_list and *not* added
     // to al_dups, so the best read will not be claimed as a dup.
     //
     // There is an issue here for pairs... my keeping one arbitrarily means that
@@ -653,7 +729,7 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
     // ordering on the way in which I consider the reads to be dups.  I hope I do
     // not have to keep more info...
     //
-    // al_set: the set of reads we are scanning for dups; we remove each read
+    // al_list: the set of reads we are scanning for dups; we remove each read
     // as we consider it and move to the next.  at the end, this should be
     // empty
     //
@@ -662,7 +738,7 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
     // means that it is a duplicate
 
     int cycle = 0;
-    al_i = al_j = al_set.begin();
+    al_i = al_j = al_list.begin();
     do {
         ++al_j;  // compare to the next one...
         ++cycle;
@@ -671,7 +747,7 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
 
         IF_DEBUG(2) cerr << HERE << " starting cycle, looking for duplicates of " << al_i->Name << endl;
 
-        while (al_j != al_set.end()) {
+        while (al_j != al_list.end()) {
             // al_i is the "best" read that we're comparing al_j against
 
             if (isDuplicate((*al_i), (*al_j))) {
@@ -679,11 +755,11 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
                 found_a_match = true;
                 if (al_j->MapQuality <= al_i->MapQuality) {
                     al_dups.push_back((*al_j));  // add second read to dups list
-                    al_j = al_set.erase(al_j);   // erase second read from al_set, continue with next read
+                    al_j = al_list.erase(al_j);   // erase second read from al_list, continue with next read
                 } else {
                     IF_DEBUG(2) cerr << HERE << " second read has better map quality" << endl;
                     al_dups.push_back((*al_i));  // add first read to dups list
-                    al_set.erase(al_i);          // erase first read from al_set
+                    al_list.erase(al_i);          // erase first read from al_list
                     al_i = al_j;                 // reset best read for these dups
                     ++al_j;                      // continue with next read
                 }
@@ -695,27 +771,27 @@ determineDuplicates(alignmentList& al_set, alignmentList& al_dups)
         }
 
         // so al_i either had no duplicates (found_a_match == false) or is the
-        // best of the duplicates seen in al_set, and the other duplicates in
-        // al_set have been removed from al_set and placed in al_dups.  in
-        // either case, i want to remove al_i from al_set now, and restart
-        // looking for dups at the beginning of al_set, which has an alignment
+        // best of the duplicates seen in al_list, and the other duplicates in
+        // al_list have been removed from al_list and placed in al_dups.  in
+        // either case, i want to remove al_i from al_list now, and restart
+        // looking for dups at the beginning of al_list, which has an alignment
         // that has not yet been determined to be a dup.
 
         if (! found_a_match)
             IF_DEBUG(2) cerr << HERE << " " << al_i->Name << " had no duplicates" << endl;
 
-        al_set.erase(al_i);
-        al_i = al_j = al_set.begin();
+        al_list.erase(al_i);
+        al_i = al_j = al_list.begin();
 
-        IF_DEBUG(2) cerr << HERE << " end of cycle " << cycle << ", " << al_set.size() 
+        IF_DEBUG(2) cerr << HERE << " end of cycle " << cycle << ", " << al_list.size() 
                 << " reads left to consider" << endl;
 
-    } while (! al_set.empty());
+    } while (! al_list.empty());
 
     IF_DEBUG(2) {
         if (al_dups.size() > 0 || DEBUG(2))
             cerr << HERE << " *** received " << initial_size << " reads, returning " 
-                << al_set.size() << " non-dup reads, " << al_dups.size() << " dup reads" << endl;
+                << al_list.size() << " non-dup reads, " << al_dups.size() << " dup reads" << endl;
         IF_DEBUG(3) listAlignments(al_dups);
     }
 }
@@ -846,18 +922,18 @@ query_dupMap(const dupMap& this_dm)
 
 
 static void
-update_dupMap(alignmentList& al_set, dupMap& this_dm)
+update_dupMap(alignmentList& al_list, dupMap& this_dm)
 {
     const string HERE = "update_dupMap():";
-    IF_DEBUG(2) cerr << HERE << " received " << al_set.size() 
+    IF_DEBUG(2) cerr << HERE << " received " << al_list.size() 
         << " duplicate alignments" << endl;
 
-    if (al_set.empty())
+    if (al_list.empty())
         return;
 
     IF_DEBUG(2) cerr << "*********************************************" << endl;
 
-    int n_reads_received = al_set.size();
+    int n_reads_received = al_list.size();
     int n_reads_found_in_map = 0;
     int n_SE_found_in_map = 0;
     int n_SE_added = 0;
@@ -867,7 +943,7 @@ update_dupMap(alignmentList& al_set, dupMap& this_dm)
 
     alignmentListI aLI_i;
 
-    for (aLI_i = al_set.begin(); aLI_i != al_set.end(); ++aLI_i) {
+    for (aLI_i = al_list.begin(); aLI_i != al_list.end(); ++aLI_i) {
 
         dupMapI dupI = this_dm.find(aLI_i->Name);
 
@@ -929,8 +1005,8 @@ update_dupMap(alignmentList& al_set, dupMap& this_dm)
         }
     }
 
-    assert(aLI_i == al_set.end());  // should be none left
-    al_set.clear();
+    assert(aLI_i == al_list.end());  // should be none left
+    al_list.clear();
 
     IF_DEBUG(2) {
         cerr << HERE << " received " << n_reads_received;

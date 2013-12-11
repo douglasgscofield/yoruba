@@ -57,7 +57,7 @@ usage()
     cerr << "Command: forget     | gbagbe       remove unused reference sequences" << endl;
     cerr << "         inside     | inu          display summary of BAM file contents" << endl;
     cerr << "         readgroup  | kojopodipo   add or modify read group information" << endl;
-    cerr << "         duplicate  | seda         mark (and remove) duplicate reads" << endl;
+    cerr << "         duplicate  | seda         mark (and optionally remove) duplicate reads" << endl;
 #ifdef _IMPLEMENTED
     cerr << "         insertsize | sefibo       calculates insert sizes" << endl;
     cerr << "         twinreads  | ibeji        find reads paired in various ways" << endl;

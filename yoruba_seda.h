@@ -1,4 +1,4 @@
-// yoruba_seda.h  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_seda.h  Copyright (c) 2012, 2013 Douglas G. Scofield
 
 #ifndef _YORUBA_SEDA_H_
 #define _YORUBA_SEDA_H_
@@ -11,7 +11,14 @@
 #include <vector>
 #include <list>
 #include <map>
+// #ifdef C++11
+// some appropriate include
+// #include <unordered_map>
+// #include <unordered_set>
+// #else
 #include <tr1/unordered_map>
+#include <tr1/unordered_set>
+// #endif
 #include <new>
 
 // BamTools includes: https://github.com/pezmaster31/bamtools

@@ -20,3 +20,5 @@ ttt.*
 tmp.*
 README.html
 *.bak
+test.cpp
+MemTrack.*
