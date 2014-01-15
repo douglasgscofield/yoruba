@@ -168,10 +168,10 @@ yoruba::main_inu(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-#ifdef _BAMTOOLS_EXTENSION
-    const SamHeader& header = reader.GetConstSamHeader();
-#else
+#ifdef _IF_BAMTOOLS_IS_BROKEN
     SamHeader header = reader.GetHeader();
+#else
+    const SamHeader& header = reader.GetConstSamHeader();
 #endif
 
     if (opt_validate) {
