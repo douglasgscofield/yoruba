@@ -1,3 +1,4 @@
+._*
 .DS_Store
 .cproject
 .project
@@ -20,3 +21,5 @@ ttt.*
 tmp.*
 README.html
 *.bak
+test.cpp
+MemTrack.*

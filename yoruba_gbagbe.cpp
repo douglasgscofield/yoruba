@@ -277,10 +277,10 @@ yoruba::main_gbagbe(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-#ifdef _BAMTOOLS_EXTENSION
-    const SamHeader& header = reader.GetConstSamHeader();
-#else
+#ifdef _IF_BAMTOOLS_IS_BROKEN
     SamHeader header = reader.GetHeader();
+#else
+    const SamHeader& header = reader.GetConstSamHeader();
 #endif
 
     //----------------- Create the header for the new BAM
@@ -401,7 +401,7 @@ yoruba::main_gbagbe(int argc, char* argv[])
             }
 
             new_refs.push_back(old_refs[i]);
-#ifdef _BAMTOOLS_EXTENSION
+#if defined(_BAMTOOLS_EXTENSION)  && ! defined(_IF_BAMTOOLS_IS_BROKEN)
             SamSequenceConstIterator refI = header.Sequences.ConstFind(old_refs[i].RefName);
             if (refI == header.Sequences.ConstEnd()) {
                 cerr << NAME << "[pass2] internal error, " << old_refs[i].RefName 
