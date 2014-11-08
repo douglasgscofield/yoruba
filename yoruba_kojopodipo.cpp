@@ -1,4 +1,4 @@
-// yoruba_kojopodipo.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_kojopodipo.cpp  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 //
 // Kojopodipo (English command is readgroup) adds or modifies the read group in a BAM file.
 //

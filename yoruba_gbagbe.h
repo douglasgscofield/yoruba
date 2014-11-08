@@ -1,4 +1,4 @@
-// yoruba_gbagbe.h  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_gbagbe.h  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 //
 // Header file for yoruba_gbagbe.cpp
 //

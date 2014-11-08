@@ -1,4 +1,4 @@
-// yoruba_gbagbe.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_gbagbe.cpp  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 //
 // Gbagbe (English command is forget) dynamically reassociates reads with reference
 // sequences in a BAM file.

@@ -1,4 +1,4 @@
-// yoruba_inu.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_inu.cpp  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 //
 // Inu (English command is inside) summarizes the contents of a BAM file.
 //

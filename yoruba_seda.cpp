@@ -1,4 +1,4 @@
-// yoruba_seda.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_seda.cpp  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 //
 // Seda finds duplicated read pairs in BAM files.
 //

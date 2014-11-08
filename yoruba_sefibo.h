@@ -1,4 +1,4 @@
-// yoruba_sefibo.h  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_sefibo.h  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 
 #ifndef _YORUBA_SEFIBO_H_
 #define _YORUBA_SEFIBO_H_

@@ -1,4 +1,4 @@
-// yoruba_ibeji.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_ibeji.cpp  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 //
 // Ibeji finds mapped reads in BAM files that are twinned in particular ways.
 //

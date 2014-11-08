@@ -1,4 +1,4 @@
-// yoruba_sefibo.cpp  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_sefibo.cpp  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 //
 // Sefibo calculates insert sizes based on read mappings within BAM files.
 //

@@ -1,4 +1,4 @@
-// yoruba_kojopodipo.h  (c) Douglas G. Scofield, Dept. Plant Physiology, Umeå University
+// yoruba_kojopodipo.h  (c) Douglas G. Scofield, douglasgscofield@gmail.com
 
 #ifndef _YORUBA_KOJOPODIPO_H_
 #define _YORUBA_KOJOPODIPO_H_
